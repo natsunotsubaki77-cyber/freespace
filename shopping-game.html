@@ -1,0 +1,1257 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#FF9800">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="おかいものゲーム">
+<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%23FF9800' width='100' height='100' rx='20'/><text x='50' y='68' font-size='50' text-anchor='middle'>🛒</text></svg>">
+<title>おかいものゲーム</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+--orange:#FF9800;--orange-light:#FFE0B2;--orange-dark:#E65100;
+--yellow:#FFF9C4;--yellow-mid:#FFD54F;
+--brown:#5D4037;--brown-light:#8D6E63;--brown-lighter:#BCAAA4;
+--green:#66BB6A;--green-dark:#388E3C;
+--red:#EF5350;--blue:#42A5F5;
+--bg:#FFF8E1;--white:#fff;--shadow:0 4px 12px rgba(0,0,0,.15);
+--radius:16px;--radius-sm:10px;
+}
+html,body{width:100%;height:100%;overflow:hidden;font-family:'Hiragino Kaku Gothic ProN','Hiragino Sans',Meiryo,sans-serif;background:var(--bg);color:var(--brown);-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+#app{width:100%;height:100%;position:relative;overflow:hidden}
+
+/* Game image base styles */
+.game-img{
+  image-rendering:auto;
+  -webkit-user-drag:none;
+  user-select:none;
+  pointer-events:none;
+  object-fit:contain;
+}
+
+/* Screen system */
+.screen{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:transform .45s cubic-bezier(.4,0,.2,1),opacity .45s ease;will-change:transform,opacity;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch}
+.screen.hidden{display:none}
+.screen.slide-out-left{transform:translateX(-100%);opacity:0}
+.screen.slide-in-right{transform:translateX(100%);opacity:0}
+.screen.slide-out-right{transform:translateX(100%);opacity:0}
+.screen.slide-in-left{transform:translateX(-100%);opacity:0}
+.screen.fade-out{opacity:0;transform:scale(.95)}
+.screen.fade-in{opacity:0;transform:scale(1.05)}
+
+/* Buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:14px 32px;border:none;border-radius:50px;font-size:1.2rem;font-weight:700;cursor:pointer;transition:transform .15s,box-shadow .15s;box-shadow:var(--shadow);font-family:inherit;-webkit-appearance:none;user-select:none;position:relative;overflow:hidden}
+.btn:active{transform:scale(.93)!important}
+.btn-primary{background:linear-gradient(135deg,var(--orange),#F57C00);color:#fff}
+.btn-secondary{background:linear-gradient(135deg,var(--green),var(--green-dark));color:#fff}
+.btn-outline{background:var(--white);color:var(--brown);border:3px solid var(--orange)}
+.btn-danger{background:linear-gradient(135deg,var(--red),#C62828);color:#fff}
+.btn-small{padding:10px 20px;font-size:1rem}
+.btn-bounce{animation:bounce-btn 2s infinite}
+@keyframes bounce-btn{0%,100%{transform:translateY(0)}15%{transform:translateY(-8px)}30%{transform:translateY(0)}45%{transform:translateY(-4px)}60%{transform:translateY(0)}}
+
+/* Title Screen */
+#title-screen{padding:20px;position:relative;background:var(--bg)}
+#title-screen .title-bg-cover{position:absolute;inset:0;z-index:0}
+#title-screen .title-bg-cover img{width:100%;height:100%;object-fit:cover;opacity:.35}
+.title-bg-emojis{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:0}
+.floating-emoji{position:absolute;opacity:.3;animation:float-around linear infinite}
+.floating-emoji img{width:100%;height:100%}
+@keyframes float-around{0%{transform:translateY(100vh) rotate(0deg)}100%{transform:translateY(-100px) rotate(360deg)}}
+.title-content{position:relative;z-index:1;text-align:center;display:flex;flex-direction:column;align-items:center;gap:16px}
+.title-shopkeeper{animation:shopkeeper-wave 2s ease-in-out infinite}
+.title-shopkeeper img{width:200px;height:200px;object-fit:contain}
+@keyframes shopkeeper-wave{0%,100%{transform:rotate(0deg)}25%{transform:rotate(-10deg)}75%{transform:rotate(10deg)}}
+.title-text{font-size:2.5rem;font-weight:900;color:var(--orange-dark);text-shadow:3px 3px 0 var(--yellow-mid),-1px -1px 0 #fff;letter-spacing:.1em;animation:title-pulse 3s ease-in-out infinite}
+@keyframes title-pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.04)}}
+.title-subtitle{font-size:1rem;color:var(--brown-light);margin-top:-8px}
+.title-stars{font-size:1.1rem;color:var(--brown);background:rgba(255,255,255,.6);padding:8px 20px;border-radius:50px;margin-top:4px}
+.title-stars .star-img{width:24px;height:24px;vertical-align:middle}
+.sound-toggle{position:absolute;top:16px;right:16px;z-index:10;width:48px;height:48px;border-radius:50%;border:none;background:rgba(255,255,255,.7);font-size:1.5rem;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.1);display:flex;align-items:center;justify-content:center}
+
+/* Stage Select */
+#stage-screen{background:linear-gradient(180deg,#FFF8E1,#FFE0B2);padding:20px}
+.stage-header{font-size:1.6rem;font-weight:900;color:var(--orange-dark);margin:16px 0 8px;text-align:center;z-index:1}
+.stage-grid{display:flex;flex-direction:column;gap:16px;width:100%;max-width:400px;z-index:1}
+.stage-card{background:var(--white);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow);display:flex;align-items:center;gap:16px;cursor:pointer;transition:transform .15s;position:relative;overflow:hidden}
+.stage-card:active{transform:scale(.96)}
+.stage-card.locked{opacity:.5;filter:grayscale(.5);cursor:not-allowed}
+.stage-card.locked::after{content:'🔒';position:absolute;right:16px;font-size:1.5rem}
+.stage-emoji{width:64px;height:64px}
+.stage-emoji img{width:100%;height:100%;object-fit:contain}
+.stage-info{flex:1}
+.stage-name{font-size:1.2rem;font-weight:700}
+.stage-stars-display{letter-spacing:2px}
+.stage-stars-display img{width:14px;height:14px;vertical-align:middle}
+.stage-level-req{font-size:.8rem;color:var(--brown-light)}
+.back-btn{position:absolute;top:16px;left:16px;z-index:10;width:44px;height:44px;border-radius:50%;border:none;background:rgba(255,255,255,.8);font-size:1.3rem;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,.1);display:flex;align-items:center;justify-content:center}
+.player-level-bar{background:rgba(255,255,255,.7);border-radius:50px;padding:8px 20px;text-align:center;font-size:.95rem;font-weight:600;z-index:1;width:100%;max-width:400px}
+.xp-bar{height:10px;background:#eee;border-radius:5px;margin-top:6px;overflow:hidden}
+.xp-bar-fill{height:100%;background:linear-gradient(90deg,var(--orange),var(--yellow-mid));border-radius:5px;transition:width .6s ease}
+
+/* Difficulty Select */
+#difficulty-screen{background:linear-gradient(180deg,#FFF8E1,#FFE0B2);padding:20px}
+.difficulty-grid{display:flex;flex-direction:column;gap:14px;width:100%;max-width:360px;z-index:1}
+.diff-card{background:var(--white);border-radius:var(--radius);padding:18px 24px;box-shadow:var(--shadow);cursor:pointer;transition:transform .15s;text-align:center}
+.diff-card:active{transform:scale(.96)}
+.diff-card h3{font-size:1.3rem;margin-bottom:4px}
+.diff-card p{font-size:.85rem;color:var(--brown-light)}
+.diff-card .diff-stars img{width:14px;height:14px;vertical-align:middle}
+
+/* Mission Screen */
+#mission-screen{background:linear-gradient(180deg,#E8F5E9,#C8E6C9);padding:20px}
+.mission-card{background:var(--white);border-radius:var(--radius);padding:24px;box-shadow:var(--shadow);width:100%;max-width:380px;text-align:center}
+.mission-card h2{font-size:1.4rem;color:var(--green-dark);margin-bottom:16px}
+.mission-list{list-style:none;text-align:left;margin:12px 0}
+.mission-list li{font-size:1.15rem;padding:8px 12px;border-bottom:1px dashed #ddd;display:flex;align-items:center;gap:8px}
+.mission-list li:last-child{border-bottom:none}
+.mission-list li img{width:32px;height:32px;object-fit:contain;vertical-align:middle}
+.mission-from{font-size:1rem;color:var(--brown-light);margin-top:12px;font-style:italic}
+
+/* Shopping Screen */
+#shopping-screen{background:var(--bg);justify-content:flex-start;padding:0}
+.shop-header{width:100%;background:linear-gradient(135deg,var(--orange),#F57C00);color:#fff;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;z-index:5;box-shadow:0 2px 8px rgba(0,0,0,.15)}
+.shop-header-left{display:flex;align-items:center;gap:8px;font-weight:700;font-size:1.1rem}
+.shop-header-left img{width:28px;height:28px;object-fit:contain;vertical-align:middle}
+.shop-header-right{display:flex;align-items:center;gap:12px}
+.wallet-display{background:rgba(255,255,255,.25);padding:6px 14px;border-radius:50px;font-weight:700;font-size:.95rem;display:flex;align-items:center;gap:4px}
+.wallet-display img{width:20px;height:20px;object-fit:contain}
+.cart-count{background:var(--red);width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.85rem}
+.shop-body{flex:1;width:100%;overflow-y:auto;padding:12px 12px 160px;-webkit-overflow-scrolling:touch}
+#shopping-screen .shop-bg{position:absolute;inset:0;z-index:0;pointer-events:none}
+#shopping-screen .shop-bg img{width:100%;height:100%;object-fit:cover;opacity:.12}
+.shelf{background:linear-gradient(180deg,#D7CCC8,#BCAAA4);border-radius:var(--radius-sm);padding:10px;margin-bottom:14px;box-shadow:inset 0 2px 4px rgba(0,0,0,.1),0 4px 8px rgba(0,0,0,.1);position:relative;z-index:1}
+.shelf::after{content:'';position:absolute;bottom:0;left:0;right:0;height:8px;background:linear-gradient(180deg,var(--brown-light),var(--brown));border-radius:0 0 var(--radius-sm) var(--radius-sm)}
+.shelf-label{font-size:.85rem;font-weight:700;color:var(--white);background:var(--brown);display:inline-block;padding:3px 12px;border-radius:50px;margin-bottom:8px}
+.shelf-items{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.product-item{background:var(--white);border-radius:var(--radius-sm);padding:10px 6px;text-align:center;cursor:pointer;transition:transform .12s,box-shadow .12s;box-shadow:0 2px 6px rgba(0,0,0,.1);user-select:none;position:relative}
+.product-item:active{transform:scale(.9)}
+.product-item.in-cart{box-shadow:0 0 0 3px var(--orange),0 2px 6px rgba(0,0,0,.1)}
+.product-item .p-img{display:block;width:64px;height:64px;margin:0 auto;object-fit:contain}
+.product-item .p-name{font-size:.75rem;margin:4px 0 2px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.product-item .p-price{font-size:.8rem;color:var(--orange-dark);font-weight:700}
+.product-item .p-badge{position:absolute;top:-4px;right:-4px;background:var(--red);color:#fff;width:22px;height:22px;border-radius:50%;font-size:.7rem;display:flex;align-items:center;justify-content:center;font-weight:700}
+.product-item .mission-mark{position:absolute;top:-4px;left:-4px;font-size:.9rem}
+.product-item .add-anim{position:absolute;inset:0;background:rgba(255,152,0,.2);border-radius:var(--radius-sm);animation:add-pulse .3s ease-out forwards;pointer-events:none}
+@keyframes add-pulse{0%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(1.2)}}
+
+/* Floating mission checklist */
+.mission-float{position:fixed;bottom:70px;left:12px;background:rgba(255,255,255,.95);border-radius:var(--radius-sm);padding:10px 14px;box-shadow:var(--shadow);font-size:.85rem;z-index:10;max-width:220px;border-left:4px solid var(--green)}
+.mission-float h4{font-size:.8rem;color:var(--green-dark);margin-bottom:4px}
+.mission-float li{list-style:none;padding:2px 0;display:flex;align-items:center;gap:4px}
+.mission-float li.done{text-decoration:line-through;opacity:.5}
+.mission-float li img{width:22px;height:22px;object-fit:contain;vertical-align:middle}
+
+/* Bottom bar */
+.shop-bottom{position:fixed;bottom:0;left:0;right:0;background:var(--white);padding:12px 16px;box-shadow:0 -2px 10px rgba(0,0,0,.1);display:flex;align-items:center;justify-content:space-between;z-index:10}
+.basket-summary{font-size:.95rem;font-weight:600;display:flex;align-items:center;gap:4px}
+.basket-summary img{width:24px;height:24px;object-fit:contain}
+
+/* Scanner Screen */
+#scanner-screen{background:linear-gradient(180deg,#ECEFF1,#CFD8DC);justify-content:flex-start;padding:0}
+.scanner-header{width:100%;background:linear-gradient(135deg,#546E7A,#37474F);color:#fff;padding:14px 16px;text-align:center;font-weight:700;font-size:1.2rem;flex-shrink:0;display:flex;align-items:center;justify-content:center;gap:8px}
+.scanner-header img{width:28px;height:28px;object-fit:contain}
+.scanner-body{flex:1;width:100%;display:flex;flex-direction:column;align-items:center;padding:16px;overflow-y:auto;gap:12px;-webkit-overflow-scrolling:touch}
+.scanner-area{width:100%;max-width:360px;background:var(--white);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow);text-align:center;position:relative;min-height:140px;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.scanner-area .scanner-img{width:52px;height:52px;object-fit:contain;margin-bottom:6px;opacity:.5}
+.scanner-beam{width:80%;height:4px;background:linear-gradient(90deg,transparent,#f44336,transparent);border-radius:2px;animation:beam-scan 1.5s ease-in-out infinite;margin:12px 0}
+@keyframes beam-scan{0%,100%{opacity:.3;transform:scaleX(.6)}50%{opacity:1;transform:scaleX(1)}}
+.scanner-label{font-size:1rem;color:var(--brown-light);margin-bottom:8px}
+.scan-flash{position:absolute;inset:0;background:rgba(255,0,0,.15);border-radius:var(--radius);animation:flash .3s ease-out forwards;pointer-events:none}
+@keyframes flash{0%{opacity:1}100%{opacity:0}}
+.scan-text-popup{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:2rem;font-weight:900;color:var(--red);animation:pop-up .5s ease-out forwards;pointer-events:none;z-index:5}
+@keyframes pop-up{0%{opacity:1;transform:translate(-50%,-50%) scale(.5)}50%{transform:translate(-50%,-50%) scale(1.3)}100%{opacity:0;transform:translate(-50%,-50%) scale(1) translateY(-30px)}}
+
+.unscanned-items{width:100%;max-width:360px;display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
+.scan-item{background:var(--white);border-radius:var(--radius-sm);padding:12px;text-align:center;cursor:grab;box-shadow:var(--shadow);transition:transform .15s;user-select:none;touch-action:none;min-width:80px}
+.scan-item:active{transform:scale(.95);cursor:grabbing}
+.scan-item .p-img{display:block;width:52px;height:52px;margin:0 auto;object-fit:contain}
+.scan-item .p-name{font-size:.75rem;font-weight:600;margin-top:2px}
+
+.receipt-area{width:100%;max-width:360px;background:var(--white);border-radius:var(--radius-sm);padding:14px;box-shadow:var(--shadow)}
+.receipt-area h3{font-size:1rem;border-bottom:2px dashed #ddd;padding-bottom:6px;margin-bottom:8px;text-align:center;display:flex;align-items:center;justify-content:center;gap:6px}
+.receipt-area h3 img{width:24px;height:24px;object-fit:contain}
+.receipt-list{list-style:none}
+.receipt-list li{display:flex;justify-content:space-between;align-items:center;padding:4px 0;font-size:.95rem;border-bottom:1px dotted #eee}
+.receipt-list li img{width:28px;height:28px;object-fit:contain;vertical-align:middle;margin-right:4px}
+.receipt-total{display:flex;justify-content:space-between;font-weight:700;font-size:1.15rem;border-top:2px solid var(--brown);padding-top:8px;margin-top:8px}
+
+/* Payment Screen */
+#payment-screen{background:linear-gradient(180deg,#E8EAF6,#C5CAE9);justify-content:flex-start;padding:0}
+.pay-header{width:100%;background:linear-gradient(135deg,#5C6BC0,#3949AB);color:#fff;padding:14px 16px;text-align:center;font-weight:700;font-size:1.2rem;flex-shrink:0;display:flex;align-items:center;justify-content:center;gap:8px}
+.pay-header img{width:28px;height:28px;object-fit:contain}
+.pay-body{flex:1;width:100%;overflow-y:auto;padding:16px;display:flex;flex-direction:column;align-items:center;gap:14px;-webkit-overflow-scrolling:touch}
+.pay-display{width:100%;max-width:380px;background:var(--white);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow)}
+.pay-display-header{display:flex;align-items:center;justify-content:center;gap:6px;margin-bottom:8px}
+.pay-display-header img{width:28px;height:28px;object-fit:contain}
+.pay-row{display:flex;justify-content:space-between;padding:6px 0;font-size:1.05rem}
+.pay-row.total{font-weight:700;font-size:1.2rem;color:var(--orange-dark);border-top:2px solid #eee;padding-top:10px;margin-top:4px}
+.pay-row.paid{color:var(--green-dark)}
+.pay-row.remaining{color:var(--red)}
+.pay-row.change{color:var(--blue)}
+.pay-exact{color:var(--green);font-weight:700;text-align:center;padding:8px;animation:pulse-exact 1s ease-in-out infinite}
+@keyframes pulse-exact{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
+
+.wallet-tray{width:100%;max-width:380px;background:linear-gradient(135deg,var(--brown),var(--brown-light));border-radius:var(--radius);padding:16px;box-shadow:var(--shadow)}
+.wallet-tray h3{color:var(--white);font-size:1rem;margin-bottom:10px;text-align:center;display:flex;align-items:center;justify-content:center;gap:6px}
+.wallet-tray h3 img{width:24px;height:24px;object-fit:contain}
+.coins-row{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
+.coin{width:64px;height:64px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;font-weight:700;transition:transform .1s;user-select:none;box-shadow:0 3px 6px rgba(0,0,0,.3),inset 0 1px 2px rgba(255,255,255,.3);position:relative;overflow:hidden;background:transparent;border:none;padding:0}
+.coin:active{transform:scale(.88)}
+.coin img{width:100%;height:100%;object-fit:contain;pointer-events:none}
+.coin-1{width:48px;height:48px}
+.coin-5{width:52px;height:52px}
+.coin-10{width:54px;height:54px}
+.coin-50{width:58px;height:58px}
+.coin-100{width:64px;height:64px}
+.coin-500{width:64px;height:64px}
+.bill{width:120px;height:56px;border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-weight:700;font-size:.9rem;transition:transform .1s;user-select:none;box-shadow:0 3px 6px rgba(0,0,0,.2);background:transparent;border:none;padding:0;margin:6px auto 0;overflow:hidden}
+.bill:active{transform:scale(.93)}
+.bill img{width:100%;height:100%;object-fit:contain;pointer-events:none}
+.pay-buttons{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+
+/* Results Screen */
+#results-screen{background:linear-gradient(180deg,#FFF9C4,#FFE082);padding:20px}
+.results-card{background:var(--white);border-radius:var(--radius);padding:28px;box-shadow:var(--shadow);width:100%;max-width:380px;text-align:center;z-index:1}
+.results-card h2{font-size:1.5rem;color:var(--orange-dark);margin-bottom:16px}
+.results-stars{margin:12px 0;display:flex;align-items:center;justify-content:center;gap:8px}
+.results-stars img{width:48px;height:48px;object-fit:contain}
+.results-stars img.empty{opacity:.2}
+.results-detail{text-align:left;margin:16px 0;font-size:.95rem}
+.results-detail li{list-style:none;padding:6px 0;border-bottom:1px dashed #eee;display:flex;justify-content:space-between}
+.results-xp{margin:16px 0}
+.results-xp-label{font-size:.9rem;color:var(--brown-light)}
+.results-buttons{display:flex;flex-direction:column;gap:10px;margin-top:16px}
+.level-up-banner{background:linear-gradient(135deg,var(--yellow-mid),var(--orange));color:var(--brown);padding:12px;border-radius:var(--radius-sm);font-weight:700;font-size:1.1rem;margin:12px 0;animation:pulse-exact 1s ease-in-out infinite}
+
+/* Confetti */
+.confetti-container{position:fixed;inset:0;pointer-events:none;z-index:100;overflow:hidden}
+.confetti-piece{position:absolute;width:10px;height:10px;top:-10px;animation:confetti-fall linear forwards}
+@keyframes confetti-fall{0%{transform:translateY(0) rotate(0deg);opacity:1}100%{transform:translateY(110vh) rotate(720deg);opacity:0}}
+
+/* Achievement popup */
+.achievement-popup{position:fixed;top:20px;left:50%;transform:translateX(-50%) translateY(-100px);background:linear-gradient(135deg,var(--yellow-mid),var(--orange));color:var(--brown);padding:14px 24px;border-radius:50px;font-weight:700;font-size:1rem;box-shadow:var(--shadow);z-index:200;transition:transform .4s cubic-bezier(.34,1.56,.64,1);white-space:nowrap;display:flex;align-items:center;gap:8px}
+.achievement-popup.show{transform:translateX(-50%) translateY(0)}
+.achievement-popup img{width:28px;height:28px;object-fit:contain}
+
+/* Responsive */
+@media(max-width:380px){
+.title-text{font-size:1.8rem}
+.title-shopkeeper img{width:140px;height:140px}
+.shelf-items{grid-template-columns:repeat(3,1fr);gap:6px}
+.product-item .p-img{width:52px;height:52px}
+.coin-1{width:40px;height:40px}
+.coin-5{width:44px;height:44px}
+.coin-10{width:46px;height:46px}
+.coin-50{width:50px;height:50px}
+.coin-100{width:52px;height:52px}
+.coin-500{width:52px;height:52px}
+}
+@media(min-width:600px){
+.shelf-items{grid-template-columns:repeat(3,1fr);gap:12px}
+.product-item .p-img{width:72px;height:72px}
+}
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- Title Screen -->
+<div id="title-screen" class="screen">
+<button class="sound-toggle" id="sound-toggle" aria-label="Sound toggle">🔊</button>
+<div class="title-bg-cover"><img src="images/bg_title.png" alt="" class="game-img"></div>
+<div class="title-bg-emojis" id="title-bg"></div>
+<div class="title-content">
+<div class="title-shopkeeper"><img src="images/shopkeeper.png" alt="てんいんさん" class="game-img"></div>
+<div class="title-text">おかいものゲーム</div>
+<div class="title-subtitle">たのしく おかいもの れんしゅう！</div>
+<div class="title-stars" id="title-stars" style="display:none"></div>
+<button class="btn btn-primary btn-bounce" id="btn-start" style="margin-top:12px;font-size:1.4rem;padding:16px 48px">はじめる</button>
+<button class="btn btn-outline btn-small" id="btn-continue" style="display:none">つづきから</button>
+</div>
+</div>
+
+<!-- Stage Select -->
+<div id="stage-screen" class="screen hidden">
+<button class="back-btn" id="back-to-title">&#8592;</button>
+<div class="stage-header">おみせを えらぼう！</div>
+<div class="player-level-bar" id="player-level-bar"></div>
+<div class="stage-grid" id="stage-grid"></div>
+</div>
+
+<!-- Difficulty Select -->
+<div id="difficulty-screen" class="screen hidden">
+<button class="back-btn" id="back-to-stage">&#8592;</button>
+<div class="stage-header" id="diff-title"></div>
+<div class="difficulty-grid" id="difficulty-grid"></div>
+</div>
+
+<!-- Mission Screen -->
+<div id="mission-screen" class="screen hidden">
+<div class="mission-card" id="mission-card"></div>
+</div>
+
+<!-- Shopping Screen -->
+<div id="shopping-screen" class="screen hidden">
+<div class="shop-bg"><img src="images/bg_shop.png" alt="" class="game-img"></div>
+<div class="shop-header">
+<div class="shop-header-left"><span id="shop-name"></span></div>
+<div class="shop-header-right">
+<div class="wallet-display" id="wallet-display"><img src="images/wallet.png" alt="" class="game-img"> 0えん</div>
+<div class="cart-count" id="cart-count">0</div>
+</div>
+</div>
+<div class="shop-body" id="shop-body"></div>
+<div class="mission-float" id="mission-float"><h4>📋 おつかいリスト</h4><ul id="mission-float-list"></ul></div>
+<div class="shop-bottom">
+<div class="basket-summary" id="basket-summary"><img src="images/basket.png" alt="" class="game-img"> 0えん</div>
+<button class="btn btn-primary btn-small" id="btn-to-register">レジへいく 🏪</button>
+</div>
+</div>
+
+<!-- Scanner Screen -->
+<div id="scanner-screen" class="screen hidden">
+<div class="scanner-header"><img src="images/scanner.png" alt="" class="game-img"> レジで スキャンしよう！</div>
+<div class="scanner-body" id="scanner-body"></div>
+</div>
+
+<!-- Payment Screen -->
+<div id="payment-screen" class="screen hidden">
+<div class="pay-header"><img src="images/register.png" alt="" class="game-img"> おかねを はらおう！</div>
+<div class="pay-body" id="pay-body"></div>
+</div>
+
+<!-- Results Screen -->
+<div id="results-screen" class="screen hidden">
+<div class="results-card" id="results-card"></div>
+</div>
+
+</div>
+
+<div class="confetti-container" id="confetti-container"></div>
+<div class="achievement-popup" id="achievement-popup"></div>
+
+<script>
+(function(){
+"use strict";
+
+/* ===== IMAGE MAPPING ===== */
+var productImgMap = {
+  'チョコレート':'chocolate.png','クッキー':'cookie.png','キャンディ':'candy.png',
+  'ケーキ':'cake.png','ドーナツ':'donut.png','アイスクリーム':'icecream.png',
+  'バースデーケーキ':'birthday_cake.png','ペロペロキャンディ':'lollipop.png','メロンパン':'melon_pan.png',
+  'りんご':'apple.png','バナナ':'banana.png','みかん':'orange.png',
+  'ぶどう':'grape.png','いちご':'strawberry.png','もも':'peach.png',
+  'メロン':'melon.png','キウイ':'kiwi.png','パイナップル':'pineapple.png',
+  'クロワッサン':'croissant.png','フランスパン':'french_bread.png','しょくパン':'bread.png',
+  'ベーグル':'bagel.png','カップケーキ':'cupcake.png','プレッツェル':'pretzel.png',
+  'おにぎり':'onigiri.png','サンドイッチ':'sandwich.png','アップルパイ':'apple_pie.png'
+};
+
+function productImg(name, cls, w, h) {
+  var file = productImgMap[name] || '';
+  if (!file) return '';
+  var style = '';
+  if (w) style += 'width:' + w + 'px;';
+  if (h) style += 'height:' + h + 'px;';
+  return '<img src="images/' + file + '" alt="' + name + '" class="game-img' + (cls ? ' ' + cls : '') + '"' + (style ? ' style="' + style + '"' : '') + '>';
+}
+
+/* First product image for a stage (used as stage icon) */
+var stageImgMap = {
+  sweets: 'candy.png',
+  fruits: 'apple.png',
+  bakery: 'croissant.png'
+};
+
+function starImg(filled) {
+  return '<img src="images/' + (filled ? 'star_filled.png' : 'star_empty.png') + '" alt="" class="game-img">';
+}
+
+function starsHtml(count, max) {
+  var h = '';
+  for (var i = 0; i < max; i++) {
+    h += starImg(i < count);
+  }
+  return h;
+}
+
+/* ===== DATA ===== */
+var stages = {
+  sweets: {
+    name: 'おかしコーナー', emoji: '🍬', unlockLevel: 1,
+    products: [
+      {name:'チョコレート',price:120},{name:'クッキー',price:80},
+      {name:'キャンディ',price:50},{name:'ケーキ',price:300},
+      {name:'ドーナツ',price:150},{name:'アイスクリーム',price:200},
+      {name:'バースデーケーキ',price:400},{name:'ペロペロキャンディ',price:60},
+      {name:'メロンパン',price:130}
+    ]
+  },
+  fruits: {
+    name: 'フルーツコーナー', emoji: '🍎', unlockLevel: 3,
+    products: [
+      {name:'りんご',price:150},{name:'バナナ',price:100},
+      {name:'みかん',price:80},{name:'ぶどう',price:350},
+      {name:'いちご',price:250},{name:'もも',price:300},
+      {name:'メロン',price:500},{name:'キウイ',price:120},
+      {name:'パイナップル',price:400}
+    ]
+  },
+  bakery: {
+    name: 'パンやさん', emoji: '🥐', unlockLevel: 5,
+    products: [
+      {name:'クロワッサン',price:180},{name:'フランスパン',price:220},
+      {name:'しょくパン',price:160},{name:'ベーグル',price:200},
+      {name:'カップケーキ',price:280},{name:'プレッツェル',price:150},
+      {name:'おにぎり',price:130},{name:'サンドイッチ',price:350},
+      {name:'アップルパイ',price:320}
+    ]
+  }
+};
+
+var difficultySettings = {
+  easy:   {name:'かんたん', desc:'おさいふ 1500えん・2つ かう', wallet:1500, missionCount:2, roundPrices:true},
+  normal: {name:'ふつう',   desc:'おさいふ 1000えん・3つ かう', wallet:1000, missionCount:3, roundPrices:false},
+  hard:   {name:'むずかしい', desc:'おさいふ 800えん・4つ かう', wallet:800, missionCount:4, roundPrices:false}
+};
+
+var achievementDefs = [
+  {id:'first_purchase', name:'はじめてのおかいもの', desc:'はじめて おかいもの した！', icon:'badge_first.png', check:function(s){return s.totalPurchases>=1}},
+  {id:'perfect5', name:'ぴったりマスター', desc:'5かい ぴったり はらった！', icon:'badge_perfect.png', check:function(s){return s.perfectPayments>=5}},
+  {id:'level5', name:'おかいものじょうず', desc:'レベル5に なった！', icon:'star_filled.png', check:function(s){return s.level>=5}},
+  {id:'fruit_all', name:'フルーツだいすき', desc:'フルーツの ミッション ぜんぶ クリア！', icon:'apple.png', check:function(s){return s.stageStars&&s.stageStars.fruits&&totalStageStars(s.stageStars.fruits)>=9}},
+  {id:'ten_purchases', name:'おかいものたつじん', desc:'10かい おかいもの した！', icon:'badge_first.png', check:function(s){return s.totalPurchases>=10}},
+  {id:'level10', name:'スーパーおきゃくさま', desc:'レベル10に なった！', icon:'star_filled.png', check:function(s){return s.level>=10}}
+];
+
+function totalStageStars(obj) {
+  var t = 0;
+  if (!obj) return 0;
+  for (var k in obj) {
+    if (obj.hasOwnProperty(k)) t += (obj[k] || 0);
+  }
+  return t;
+}
+
+/* ===== SAVE DATA ===== */
+var saveData;
+function loadSave() {
+  try {
+    var d = localStorage.getItem('shopping_game_save');
+    if (d) { saveData = JSON.parse(d); return; }
+  } catch(e) {}
+  saveData = {level:1, xp:0, totalStars:0, totalPurchases:0, perfectPayments:0, stageStars:{}, achievements:[], soundOn:true};
+}
+function writeSave() {
+  try { localStorage.setItem('shopping_game_save', JSON.stringify(saveData)); } catch(e) {}
+}
+function xpForLevel(lv) { return 50 + (lv - 1) * 30; }
+loadSave();
+
+/* ===== SOUND ===== */
+var audioCtx = null;
+function getAudio() {
+  if (!audioCtx) {
+    try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) {}
+  }
+  if (audioCtx && audioCtx.state === 'suspended') {
+    try { audioCtx.resume(); } catch(e) {}
+  }
+  return audioCtx;
+}
+function playSound(type) {
+  if (!saveData.soundOn) return;
+  var ctx = getAudio();
+  if (!ctx) return;
+  try {
+    var o, g, now = ctx.currentTime;
+    g = ctx.createGain();
+    g.connect(ctx.destination);
+    if (type === 'tap') {
+      o = ctx.createOscillator(); o.type='sine'; o.frequency.value=800;
+      o.connect(g); g.gain.setValueAtTime(.15,now); g.gain.exponentialRampToValueAtTime(.001,now+.1);
+      o.start(now); o.stop(now+.1);
+    } else if (type === 'cart') {
+      o = ctx.createOscillator(); o.type='sine'; o.frequency.setValueAtTime(600,now); o.frequency.linearRampToValueAtTime(900,now+.1);
+      o.connect(g); g.gain.setValueAtTime(.15,now); g.gain.exponentialRampToValueAtTime(.001,now+.15);
+      o.start(now); o.stop(now+.15);
+    } else if (type === 'remove') {
+      o = ctx.createOscillator(); o.type='sine'; o.frequency.setValueAtTime(700,now); o.frequency.linearRampToValueAtTime(400,now+.12);
+      o.connect(g); g.gain.setValueAtTime(.12,now); g.gain.exponentialRampToValueAtTime(.001,now+.15);
+      o.start(now); o.stop(now+.15);
+    } else if (type === 'scan') {
+      o = ctx.createOscillator(); o.type='square'; o.frequency.value=1200;
+      o.connect(g); g.gain.setValueAtTime(.12,now); g.gain.exponentialRampToValueAtTime(.001,now+.08);
+      o.start(now); o.stop(now+.08);
+      var o2 = ctx.createOscillator(); o2.type='square'; o2.frequency.value=1600;
+      var g2 = ctx.createGain(); g2.connect(ctx.destination);
+      o2.connect(g2); g2.gain.setValueAtTime(.12,now+.08); g2.gain.exponentialRampToValueAtTime(.001,now+.15);
+      o2.start(now+.08); o2.stop(now+.15);
+    } else if (type === 'coin') {
+      o = ctx.createOscillator(); o.type='sine'; o.frequency.setValueAtTime(1400,now); o.frequency.exponentialRampToValueAtTime(2000,now+.08);
+      o.connect(g); g.gain.setValueAtTime(.1,now); g.gain.exponentialRampToValueAtTime(.001,now+.12);
+      o.start(now); o.stop(now+.12);
+    } else if (type === 'success') {
+      var notes = [523,659,784,1047];
+      for (var si = 0; si < notes.length; si++) {
+        (function(f, i){
+          var oo = ctx.createOscillator(); oo.type='sine'; oo.frequency.value=f;
+          var gg = ctx.createGain(); gg.connect(ctx.destination);
+          oo.connect(gg); var t=now+i*.12;
+          gg.gain.setValueAtTime(.12,t); gg.gain.exponentialRampToValueAtTime(.001,t+.25);
+          oo.start(t); oo.stop(t+.25);
+        })(notes[si], si);
+      }
+    } else if (type === 'levelup') {
+      var notes2 = [523,659,784,1047,1319];
+      for (var li = 0; li < notes2.length; li++) {
+        (function(f, i){
+          var oo = ctx.createOscillator(); oo.type='triangle'; oo.frequency.value=f;
+          var gg = ctx.createGain(); gg.connect(ctx.destination);
+          oo.connect(gg); var t=now+i*.1;
+          gg.gain.setValueAtTime(.15,t); gg.gain.exponentialRampToValueAtTime(.001,t+.3);
+          oo.start(t); oo.stop(t+.3);
+        })(notes2[li], li);
+      }
+    } else if (type === 'error') {
+      o = ctx.createOscillator(); o.type='sawtooth'; o.frequency.value=200;
+      o.connect(g); g.gain.setValueAtTime(.1,now); g.gain.exponentialRampToValueAtTime(.001,now+.3);
+      o.start(now); o.stop(now+.3);
+    }
+  } catch(e) {}
+}
+
+/* ===== SCREENS ===== */
+var currentScreen = 'title-screen';
+function showScreen(id, direction) {
+  var old = document.getElementById(currentScreen);
+  var next = document.getElementById(id);
+  if (old === next) return;
+  var dir = direction || 'right';
+  next.classList.remove('hidden','slide-out-left','slide-out-right','slide-in-left','slide-in-right','fade-out','fade-in');
+  if (dir === 'right') {
+    next.classList.add('slide-in-right');
+    old.classList.add('slide-out-left');
+  } else if (dir === 'left') {
+    next.classList.add('slide-in-left');
+    old.classList.add('slide-out-right');
+  } else {
+    next.classList.add('fade-in');
+    old.classList.add('fade-out');
+  }
+  // Force reflow
+  void next.offsetWidth;
+  next.classList.remove('slide-in-right','slide-in-left','fade-in');
+  var oldRef = old;
+  setTimeout(function(){
+    oldRef.classList.add('hidden');
+    oldRef.classList.remove('slide-out-left','slide-out-right','fade-out');
+  }, 500);
+  currentScreen = id;
+}
+
+/* ===== TITLE ===== */
+function initTitle() {
+  var bg = document.getElementById('title-bg');
+  bg.innerHTML = '';
+  var floatImgs = ['apple.png','banana.png','candy.png','donut.png','croissant.png','cookie.png','cake.png','strawberry.png','french_bread.png','cupcake.png','chocolate.png','lollipop.png'];
+  for (var i = 0; i < 15; i++) {
+    var span = document.createElement('span');
+    span.className = 'floating-emoji';
+    var sz = 1.2 + Math.random() * 1.5;
+    span.style.width = (sz * 24) + 'px';
+    span.style.height = (sz * 24) + 'px';
+    span.innerHTML = '<img src="images/' + floatImgs[i % floatImgs.length] + '" alt="" class="game-img" style="width:100%;height:100%">';
+    span.style.left = (Math.random()*90+5) + '%';
+    span.style.animationDuration = (8+Math.random()*12) + 's';
+    span.style.animationDelay = (-Math.random()*15) + 's';
+    bg.appendChild(span);
+  }
+  var starsEl = document.getElementById('title-stars');
+  var contBtn = document.getElementById('btn-continue');
+  if (saveData.totalPurchases > 0) {
+    starsEl.style.display = '';
+    starsEl.innerHTML = starImg(true) + ' ' + saveData.totalStars + 'こ ｜ レベル ' + saveData.level;
+    contBtn.style.display = '';
+  } else {
+    starsEl.style.display = 'none';
+    contBtn.style.display = 'none';
+  }
+  updateSoundBtn();
+}
+
+function updateSoundBtn() {
+  document.getElementById('sound-toggle').textContent = saveData.soundOn ? '🔊' : '🔇';
+}
+
+document.getElementById('sound-toggle').addEventListener('click', function(){
+  saveData.soundOn = !saveData.soundOn;
+  writeSave();
+  updateSoundBtn();
+  if (saveData.soundOn) playSound('tap');
+});
+document.getElementById('btn-start').addEventListener('click', function(){ playSound('tap'); goToStageSelect(); });
+document.getElementById('btn-continue').addEventListener('click', function(){ playSound('tap'); goToStageSelect(); });
+
+/* ===== STAGE SELECT ===== */
+function goToStageSelect() {
+  renderStageSelect();
+  showScreen('stage-screen', 'right');
+}
+
+function renderStageSelect() {
+  var lvBar = document.getElementById('player-level-bar');
+  var xpNeeded = xpForLevel(saveData.level);
+  lvBar.innerHTML = 'レベル ' + saveData.level + '　' + starImg(true) + ' ' + saveData.totalStars + 'こ' +
+    '<div class="xp-bar"><div class="xp-bar-fill" style="width:' + Math.min(100, saveData.xp / xpNeeded * 100) + '%"></div></div>';
+
+  var grid = document.getElementById('stage-grid');
+  grid.innerHTML = '';
+  var stageKeys = ['sweets','fruits','bakery'];
+  for (var sk = 0; sk < stageKeys.length; sk++) {
+    (function(key){
+      var s = stages[key];
+      var locked = saveData.level < s.unlockLevel;
+      var stars = saveData.stageStars[key] || {};
+      var totalSt = totalStageStars(stars);
+      var maxSt = 9;
+      var card = document.createElement('div');
+      card.className = 'stage-card' + (locked ? ' locked' : '');
+      card.innerHTML = '<div class="stage-emoji"><img src="images/' + stageImgMap[key] + '" alt="" class="game-img" style="width:64px;height:64px"></div>' +
+        '<div class="stage-info"><div class="stage-name">' + s.name + '</div>' +
+        '<div class="stage-stars-display">' + starsHtml(totalSt, maxSt) + '</div>' +
+        (locked ? '<div class="stage-level-req">レベル' + s.unlockLevel + 'で あく</div>' : '') +
+        '</div>';
+      if (!locked) {
+        card.addEventListener('click', function(){ playSound('tap'); selectedStage = key; goToDifficulty(key); });
+      }
+      grid.appendChild(card);
+    })(stageKeys[sk]);
+  }
+}
+
+document.getElementById('back-to-title').addEventListener('click', function(){ playSound('tap'); showScreen('title-screen','left'); initTitle(); });
+
+/* ===== DIFFICULTY SELECT ===== */
+var selectedStage = null;
+var selectedDifficulty = null;
+
+function goToDifficulty(stageKey) {
+  var s = stages[stageKey];
+  document.getElementById('diff-title').innerHTML = '<img src="images/' + stageImgMap[stageKey] + '" alt="" class="game-img" style="width:32px;height:32px;vertical-align:middle"> ' + s.name;
+  var grid = document.getElementById('difficulty-grid');
+  grid.innerHTML = '';
+  var diffs = ['easy','normal','hard'];
+  for (var di = 0; di < diffs.length; di++) {
+    (function(dk){
+      var d = difficultySettings[dk];
+      var starCount = (saveData.stageStars[stageKey] || {})[dk] || 0;
+      var card = document.createElement('div');
+      card.className = 'diff-card';
+      card.innerHTML = '<h3>' + d.name + '</h3><p>' + d.desc + '</p><div class="diff-stars" style="margin-top:4px">' + starsHtml(starCount, 3) + '</div>';
+      card.addEventListener('click', function(){ playSound('tap'); selectedDifficulty = dk; startMission(); });
+      grid.appendChild(card);
+    })(diffs[di]);
+  }
+  showScreen('difficulty-screen', 'right');
+}
+
+document.getElementById('back-to-stage').addEventListener('click', function(){ playSound('tap'); showScreen('stage-screen','left'); renderStageSelect(); });
+
+/* ===== MISSION ===== */
+var currentMission = [];
+var currentWallet = 0;
+var currentProducts = [];
+
+function shuffleArray(arr) {
+  var a = arr.slice();
+  for (var i = a.length - 1; i > 0; i--) {
+    var j = Math.floor(Math.random() * (i + 1));
+    var tmp = a[i]; a[i] = a[j]; a[j] = tmp;
+  }
+  return a;
+}
+
+function startMission() {
+  var stg = stages[selectedStage];
+  var diff = difficultySettings[selectedDifficulty];
+
+  currentProducts = [];
+  for (var pi = 0; pi < stg.products.length; pi++) {
+    var p = stg.products[pi];
+    var price = p.price;
+    if (diff.roundPrices) price = Math.round(price / 100) * 100 || 100;
+    currentProducts.push({name:p.name, price:price});
+  }
+
+  // Pick mission items ensuring total fits in wallet
+  var shuffled = shuffleArray(currentProducts);
+  currentMission = [];
+  var missionTotal = 0;
+  for (var m = 0; m < shuffled.length && currentMission.length < diff.missionCount; m++) {
+    if (missionTotal + shuffled[m].price <= diff.wallet - 50) {
+      currentMission.push({name:shuffled[m].name, price:shuffled[m].price});
+      missionTotal += shuffled[m].price;
+    }
+  }
+  // fallback: if not enough items, just take cheapest
+  if (currentMission.length < diff.missionCount) {
+    var sorted = currentProducts.slice().sort(function(a,b){return a.price-b.price});
+    currentMission = [];
+    for (var fb = 0; fb < diff.missionCount && fb < sorted.length; fb++) {
+      currentMission.push({name:sorted[fb].name, price:sorted[fb].price});
+    }
+  }
+
+  currentWallet = diff.wallet;
+
+  var card = document.getElementById('mission-card');
+  var listHtml = '<ul class="mission-list">';
+  for (var ml = 0; ml < currentMission.length; ml++) {
+    var item = currentMission[ml];
+    listHtml += '<li>' + productImg(item.name, '', 32, 32) + ' ' + item.name + '（' + item.price + 'えん）</li>';
+  }
+  listHtml += '</ul>';
+  card.innerHTML = '<h2>📋 おつかいリスト</h2>' +
+    '<div style="font-size:1.1rem;margin-bottom:8px">これを かってきてね！</div>' +
+    listHtml +
+    '<div class="mission-from">おさいふに ' + currentWallet + 'えん はいってるよ</div>' +
+    '<button class="btn btn-secondary" id="btn-go-shop" style="margin-top:16px;font-size:1.2rem">おかいもの スタート！</button>';
+  document.getElementById('btn-go-shop').addEventListener('click', function(){ playSound('tap'); goShopping(); });
+  showScreen('mission-screen', 'right');
+}
+
+/* ===== SHOPPING ===== */
+var cart = [];
+
+function goShopping() {
+  cart = [];
+  var stg = stages[selectedStage];
+  document.getElementById('shop-name').innerHTML = '<img src="images/' + stageImgMap[selectedStage] + '" alt="" class="game-img" style="width:24px;height:24px;vertical-align:middle"> ' + stg.name;
+  updateShopHeader();
+  renderShelves();
+  renderMissionFloat();
+  showScreen('shopping-screen', 'right');
+}
+
+function cartTotal() {
+  var t = 0;
+  for (var i = 0; i < cart.length; i++) t += cart[i].price;
+  return t;
+}
+
+function updateShopHeader() {
+  var total = cartTotal();
+  document.getElementById('wallet-display').innerHTML = '<img src="images/wallet.png" alt="" class="game-img" style="width:20px;height:20px"> ' + (currentWallet - total) + 'えん';
+  document.getElementById('cart-count').textContent = cart.length;
+  document.getElementById('basket-summary').innerHTML = '<img src="images/basket.png" alt="" class="game-img" style="width:24px;height:24px"> ' + total + 'えん（' + cart.length + 'こ）';
+}
+
+function countInCart(name) {
+  var c = 0;
+  for (var i = 0; i < cart.length; i++) {
+    if (cart[i].name === name) c++;
+  }
+  return c;
+}
+
+function isMissionItem(name) {
+  for (var i = 0; i < currentMission.length; i++) {
+    if (currentMission[i].name === name) return true;
+  }
+  return false;
+}
+
+function renderShelves() {
+  var body = document.getElementById('shop-body');
+  body.innerHTML = '';
+  var shelfLabels = ['おすすめ', 'にんき', 'そのほか'];
+  var rows = [];
+  for (var i = 0; i < currentProducts.length; i += 3) {
+    rows.push(currentProducts.slice(i, i + 3));
+  }
+  for (var ri = 0; ri < rows.length; ri++) {
+    var shelf = document.createElement('div');
+    shelf.className = 'shelf';
+    var label = document.createElement('div');
+    label.className = 'shelf-label';
+    label.textContent = shelfLabels[ri] || 'そのほか';
+    shelf.appendChild(label);
+    var items = document.createElement('div');
+    items.className = 'shelf-items';
+    for (var ii = 0; ii < rows[ri].length; ii++) {
+      (function(p){
+        var div = document.createElement('div');
+        div.className = 'product-item';
+        var inCartCount = countInCart(p.name);
+        if (inCartCount > 0) div.classList.add('in-cart');
+        var mission = isMissionItem(p.name);
+        var html = '';
+        if (mission) html += '<div class="mission-mark">📋</div>';
+        if (inCartCount > 0) html += '<div class="p-badge">' + inCartCount + '</div>';
+        html += productImg(p.name, 'p-img') +
+          '<div class="p-name">' + p.name + '</div>' +
+          '<div class="p-price">' + p.price + 'えん</div>';
+        div.innerHTML = html;
+        div.addEventListener('click', function(){
+          var total = cartTotal();
+          if (total + p.price > currentWallet) {
+            playSound('error');
+            return;
+          }
+          playSound('cart');
+          cart.push({name:p.name, price:p.price});
+          // Add animation
+          var anim = document.createElement('div');
+          anim.className = 'add-anim';
+          div.appendChild(anim);
+          setTimeout(function(){ if(anim.parentNode) anim.parentNode.removeChild(anim); }, 350);
+          updateShopHeader();
+          renderShelves();
+          renderMissionFloat();
+        });
+        // Right-click to remove
+        div.addEventListener('contextmenu', function(e){
+          e.preventDefault();
+          removeFromCart(p.name);
+        });
+        items.appendChild(div);
+      })(rows[ri][ii]);
+    }
+    shelf.appendChild(items);
+    body.appendChild(shelf);
+  }
+  // Add remove hint if cart has items
+  if (cart.length > 0) {
+    var hint = document.createElement('div');
+    hint.style.cssText = 'text-align:center;font-size:.8rem;color:#999;padding:8px;margin-bottom:60px';
+    hint.textContent = '※ みぎクリックで かごから もどせるよ';
+    body.appendChild(hint);
+  }
+}
+
+function removeFromCart(name) {
+  for (var i = cart.length - 1; i >= 0; i--) {
+    if (cart[i].name === name) {
+      cart.splice(i, 1);
+      playSound('remove');
+      updateShopHeader();
+      renderShelves();
+      renderMissionFloat();
+      return;
+    }
+  }
+}
+
+function renderMissionFloat() {
+  var list = document.getElementById('mission-float-list');
+  list.innerHTML = '';
+  for (var i = 0; i < currentMission.length; i++) {
+    var m = currentMission[i];
+    var inCart = countInCart(m.name) > 0;
+    var li = document.createElement('li');
+    li.className = inCart ? 'done' : '';
+    li.innerHTML = (inCart ? '✅ ' : '⬜ ') + productImg(m.name, '', 22, 22) + ' ' + m.name;
+    list.appendChild(li);
+  }
+}
+
+document.getElementById('btn-to-register').addEventListener('click', function(){
+  if (cart.length === 0) { playSound('error'); return; }
+  playSound('tap');
+  goToScanner();
+});
+
+/* ===== SCANNER ===== */
+var scannedItems = [];
+var unscannedItems = [];
+
+function goToScanner() {
+  scannedItems = [];
+  unscannedItems = cart.slice();
+  renderScanner();
+  showScreen('scanner-screen', 'right');
+}
+
+function renderScanner() {
+  var body = document.getElementById('scanner-body');
+  body.innerHTML = '';
+
+  // Scanner area
+  var scanArea = document.createElement('div');
+  scanArea.className = 'scanner-area';
+  scanArea.id = 'scanner-drop-zone';
+  scanArea.innerHTML = '<img src="images/scanner.png" alt="" class="game-img scanner-img">' +
+    '<div class="scanner-label">' + (unscannedItems.length > 0 ? 'ここに ドラッグ、またはタップ！' : '✅ ぜんぶ スキャンしたよ！') + '</div>' +
+    (unscannedItems.length > 0 ? '<div class="scanner-beam"></div>' : '');
+  body.appendChild(scanArea);
+
+  // Unscanned
+  if (unscannedItems.length > 0) {
+    var unscannedDiv = document.createElement('div');
+    unscannedDiv.className = 'unscanned-items';
+    unscannedDiv.id = 'unscanned-items';
+    for (var ui = 0; ui < unscannedItems.length; ui++) {
+      (function(item, idx){
+        var div = document.createElement('div');
+        div.className = 'scan-item';
+        div.dataset.idx = idx;
+        div.innerHTML = productImg(item.name, 'p-img') + '<div class="p-name">' + item.name + '</div>';
+        setupDrag(div, idx);
+        unscannedDiv.appendChild(div);
+      })(unscannedItems[ui], ui);
+    }
+    body.appendChild(unscannedDiv);
+  }
+
+  // Receipt
+  var receipt = document.createElement('div');
+  receipt.className = 'receipt-area';
+  receipt.id = 'receipt-area';
+  renderReceipt(receipt);
+  body.appendChild(receipt);
+
+  // Button to proceed
+  if (unscannedItems.length === 0) {
+    var btn = document.createElement('button');
+    btn.className = 'btn btn-primary';
+    btn.textContent = 'おかいけい へ すすむ 💴';
+    btn.style.marginTop = '8px';
+    btn.addEventListener('click', function(){ playSound('tap'); goToPayment(); });
+    body.appendChild(btn);
+  }
+}
+
+function renderReceipt(container) {
+  var html = '<h3><img src="images/register.png" alt="" class="game-img"> レシート</h3><ul class="receipt-list">';
+  var total = 0;
+  for (var i = 0; i < scannedItems.length; i++) {
+    var item = scannedItems[i];
+    html += '<li><span>' + productImg(item.name, '', 28, 28) + ' ' + item.name + '</span><span>' + item.price + 'えん</span></li>';
+    total += item.price;
+  }
+  html += '</ul>';
+  if (scannedItems.length > 0) {
+    html += '<div class="receipt-total"><span>ごうけい</span><span>' + total + 'えん</span></div>';
+  } else {
+    html += '<div style="text-align:center;color:#999;padding:12px">まだ スキャンしてないよ</div>';
+  }
+  container.innerHTML = html;
+}
+
+function scanItem(idx) {
+  if (idx < 0 || idx >= unscannedItems.length) return;
+  var item = unscannedItems.splice(idx, 1)[0];
+  scannedItems.push(item);
+  playSound('scan');
+  // Flash effect
+  var zone = document.getElementById('scanner-drop-zone');
+  if (zone) {
+    var flash = document.createElement('div');
+    flash.className = 'scan-flash';
+    zone.appendChild(flash);
+    var popup = document.createElement('div');
+    popup.className = 'scan-text-popup';
+    popup.textContent = 'ピッ！';
+    zone.appendChild(popup);
+    setTimeout(function(){ if(flash.parentNode)flash.parentNode.removeChild(flash); }, 400);
+    setTimeout(function(){ if(popup.parentNode)popup.parentNode.removeChild(popup); }, 600);
+  }
+  setTimeout(function(){ renderScanner(); }, 300);
+}
+
+function setupDrag(el, idx) {
+  var startX, startY, offsetX, offsetY, clone, dragging = false;
+  function onStart(x, y) {
+    dragging = true;
+    var rect = el.getBoundingClientRect();
+    offsetX = x - rect.left;
+    offsetY = y - rect.top;
+    startX = x; startY = y;
+    clone = el.cloneNode(true);
+    clone.style.position = 'fixed';
+    clone.style.left = (x - offsetX) + 'px';
+    clone.style.top = (y - offsetY) + 'px';
+    clone.style.zIndex = '1000';
+    clone.style.opacity = '.85';
+    clone.style.pointerEvents = 'none';
+    clone.style.transition = 'none';
+    clone.style.transform = 'scale(1.1)';
+    document.body.appendChild(clone);
+    el.style.opacity = '.3';
+  }
+  function onMove(x, y) {
+    if (!dragging || !clone) return;
+    clone.style.left = (x - offsetX) + 'px';
+    clone.style.top = (y - offsetY) + 'px';
+  }
+  function onEnd(x, y) {
+    if (!dragging) return;
+    dragging = false;
+    if (clone && clone.parentNode) clone.parentNode.removeChild(clone);
+    el.style.opacity = '1';
+    var zone = document.getElementById('scanner-drop-zone');
+    if (zone) {
+      var r = zone.getBoundingClientRect();
+      if (x >= r.left && x <= r.right && y >= r.top && y <= r.bottom) {
+        scanItem(idx);
+        return;
+      }
+    }
+    // Also scan on tap (no significant movement)
+    if (Math.abs(x - startX) < 15 && Math.abs(y - startY) < 15) {
+      scanItem(idx);
+    }
+  }
+  el.addEventListener('mousedown', function(e){
+    e.preventDefault();
+    onStart(e.clientX, e.clientY);
+    function mm(e2){ e2.preventDefault(); onMove(e2.clientX, e2.clientY); }
+    function mu(e2){ onEnd(e2.clientX, e2.clientY); document.removeEventListener('mousemove',mm); document.removeEventListener('mouseup',mu); }
+    document.addEventListener('mousemove', mm);
+    document.addEventListener('mouseup', mu);
+  });
+  el.addEventListener('touchstart', function(e){
+    e.preventDefault();
+    var t = e.touches[0];
+    onStart(t.clientX, t.clientY);
+    function tm(e2){ e2.preventDefault(); var t2=e2.touches[0]; onMove(t2.clientX, t2.clientY); }
+    function te(e2){ var t2=e2.changedTouches[0]; onEnd(t2.clientX, t2.clientY); document.removeEventListener('touchmove',tm); document.removeEventListener('touchend',te); }
+    document.addEventListener('touchmove', tm, {passive:false});
+    document.addEventListener('touchend', te);
+  }, {passive:false});
+}
+
+/* ===== PAYMENT ===== */
+var paymentTotal = 0;
+var paidAmount = 0;
+var paidCoins = [];
+
+function goToPayment() {
+  paymentTotal = 0;
+  for (var i = 0; i < scannedItems.length; i++) paymentTotal += scannedItems[i].price;
+  paidAmount = 0;
+  paidCoins = [];
+  renderPayment();
+  showScreen('payment-screen', 'right');
+}
+
+function renderPayment() {
+  var body = document.getElementById('pay-body');
+  var remaining = paymentTotal - paidAmount;
+  var change = paidAmount > paymentTotal ? paidAmount - paymentTotal : 0;
+  var isExact = paidAmount === paymentTotal;
+  var isPaid = paidAmount >= paymentTotal;
+
+  var html = '<div class="pay-display">' +
+    '<div class="pay-display-header"><img src="images/register.png" alt="" class="game-img"></div>' +
+    '<div class="pay-row total"><span>ごうけい</span><span>' + paymentTotal + 'えん</span></div>' +
+    '<div class="pay-row paid"><span>はらった</span><span>' + paidAmount + 'えん</span></div>';
+  if (isPaid && change > 0) {
+    html += '<div class="pay-row change"><span>おつり</span><span>' + change + 'えん</span></div>';
+  } else if (!isPaid) {
+    html += '<div class="pay-row remaining"><span>のこり</span><span>' + remaining + 'えん</span></div>';
+  }
+  if (isExact && isPaid) html += '<div class="pay-exact">🎉 ぴったり！すごい！</div>';
+  html += '</div>';
+
+  // Show paid coins
+  if (paidCoins.length > 0) {
+    html += '<div style="text-align:center;font-size:.85rem;color:#666;margin-top:4px">はらったもの: ';
+    for (var pc = 0; pc < paidCoins.length; pc++) {
+      html += paidCoins[pc] + 'えん ';
+    }
+    html += '</div>';
+  }
+
+  // Wallet
+  if (!isPaid) {
+    html += '<div class="wallet-tray"><h3><img src="images/wallet.png" alt="" class="game-img"> おさいふ</h3><div class="coins-row">';
+    var coins = [
+      {val:1,cls:'coin-1',img:'coin_1.png'},{val:5,cls:'coin-5',img:'coin_5.png'},{val:10,cls:'coin-10',img:'coin_10.png'},
+      {val:50,cls:'coin-50',img:'coin_50.png'},{val:100,cls:'coin-100',img:'coin_100.png'},{val:500,cls:'coin-500',img:'coin_500.png'}
+    ];
+    for (var ci = 0; ci < coins.length; ci++) {
+      var c = coins[ci];
+      html += '<div class="coin ' + c.cls + '" data-val="' + c.val + '"><img src="images/' + c.img + '" alt="' + c.val + 'えん" class="game-img"></div>';
+    }
+    html += '</div>';
+    html += '<div class="bill" data-val="1000"><img src="images/bill_1000.png" alt="1000えん" class="game-img"></div>';
+    html += '</div>';
+  }
+
+  // Buttons
+  html += '<div class="pay-buttons">';
+  html += '<button class="btn btn-outline btn-small" id="btn-pay-reset">やりなおす 🔄</button>';
+  if (isPaid) {
+    html += '<button class="btn btn-secondary" id="btn-pay-done" style="font-size:1.1rem;padding:14px 28px">おかいもの かんりょう！ ✨</button>';
+  }
+  html += '</div>';
+
+  body.innerHTML = html;
+
+  // Event listeners for coins/bills
+  var coinEls = body.querySelectorAll('.coin,.bill');
+  for (var ei = 0; ei < coinEls.length; ei++) {
+    (function(el){
+      el.addEventListener('click', function(){
+        if (paidAmount >= paymentTotal) return;
+        var v = parseInt(el.getAttribute('data-val'));
+        paidAmount += v;
+        paidCoins.push(v);
+        playSound('coin');
+        renderPayment();
+      });
+    })(coinEls[ei]);
+  }
+
+  var resetBtn = document.getElementById('btn-pay-reset');
+  if (resetBtn) resetBtn.addEventListener('click', function(){ playSound('tap'); paidAmount = 0; paidCoins = []; renderPayment(); });
+  var doneBtn = document.getElementById('btn-pay-done');
+  if (doneBtn) doneBtn.addEventListener('click', function(){ playSound('success'); goToResults(); });
+}
+
+/* ===== RESULTS ===== */
+function goToResults() {
+  var missionComplete = true;
+  for (var mc = 0; mc < currentMission.length; mc++) {
+    var found = false;
+    for (var sc = 0; sc < scannedItems.length; sc++) {
+      if (scannedItems[sc].name === currentMission[mc].name) { found = true; break; }
+    }
+    if (!found) { missionComplete = false; break; }
+  }
+  var exactPayment = paidAmount === paymentTotal;
+  var stars = 1;
+  if (missionComplete) stars = 2;
+  if (missionComplete && exactPayment) stars = 3;
+
+  // XP calculation
+  var xpEarned = 20 + (stars - 1) * 15;
+
+  // Update save
+  saveData.totalPurchases++;
+  saveData.totalStars += stars;
+  saveData.xp += xpEarned;
+  if (!saveData.stageStars[selectedStage]) saveData.stageStars[selectedStage] = {};
+  var prevStars = saveData.stageStars[selectedStage][selectedDifficulty] || 0;
+  if (stars > prevStars) {
+    saveData.stageStars[selectedStage][selectedDifficulty] = stars;
+  }
+
+  // Level up check
+  var leveledUp = false;
+  while (saveData.xp >= xpForLevel(saveData.level)) {
+    saveData.xp -= xpForLevel(saveData.level);
+    saveData.level++;
+    leveledUp = true;
+  }
+  if (exactPayment) saveData.perfectPayments++;
+
+  // Achievements
+  var newAchievements = [];
+  for (var ai = 0; ai < achievementDefs.length; ai++) {
+    var a = achievementDefs[ai];
+    if (saveData.achievements.indexOf(a.id) === -1 && a.check(saveData)) {
+      saveData.achievements.push(a.id);
+      newAchievements.push(a);
+    }
+  }
+
+  writeSave();
+
+  // Render
+  var card = document.getElementById('results-card');
+  var resultStarsHtml = '';
+  for (var i = 1; i <= 3; i++) {
+    resultStarsHtml += '<img src="images/' + (i <= stars ? 'star_filled.png' : 'star_empty.png') + '" alt="" class="game-img' + (i > stars ? ' empty' : '') + '">';
+  }
+
+  var changeAmount = paidAmount - paymentTotal;
+  var html = '<h2>おかいもの かんりょう！</h2>';
+  html += '<div class="results-stars">' + resultStarsHtml + '</div>';
+  html += '<ul class="results-detail">';
+  html += '<li><span>ミッション</span><span>' + (missionComplete ? '✅ かんぺき！' : '❌ まだだよ') + '</span></li>';
+  html += '<li><span>おしはらい</span><span>' + (exactPayment ? '✅ ぴったり！' : '💸 おつり ' + changeAmount + 'えん') + '</span></li>';
+  html += '<li><span>けいけんち</span><span>+' + xpEarned + ' XP</span></li>';
+  html += '</ul>';
+
+  if (leveledUp) {
+    html += '<div class="level-up-banner">🎉 レベルアップ！ レベル ' + saveData.level + ' になった！</div>';
+  }
+
+  // XP bar
+  var xpNeeded = xpForLevel(saveData.level);
+  html += '<div class="results-xp"><div class="results-xp-label">レベル ' + saveData.level + '（' + saveData.xp + '/' + xpNeeded + ' XP）</div>' +
+    '<div class="xp-bar"><div class="xp-bar-fill" style="width:' + (saveData.xp/xpNeeded*100) + '%"></div></div></div>';
+
+  html += '<div class="results-buttons">';
+  html += '<button class="btn btn-primary" id="btn-retry">もういちど 🔄</button>';
+  html += '<button class="btn btn-secondary" id="btn-next-stage">ステージせんたく 🏪</button>';
+  html += '<button class="btn btn-outline btn-small" id="btn-to-title2">タイトルへ 🏠</button>';
+  html += '</div>';
+
+  card.innerHTML = html;
+
+  document.getElementById('btn-retry').addEventListener('click', function(){ playSound('tap'); startMission(); });
+  document.getElementById('btn-next-stage').addEventListener('click', function(){ playSound('tap'); goToStageSelect(); });
+  document.getElementById('btn-to-title2').addEventListener('click', function(){ playSound('tap'); showScreen('title-screen','left'); initTitle(); });
+
+  showScreen('results-screen', 'fade');
+
+  // Confetti
+  if (stars >= 2) spawnConfetti();
+  if (leveledUp) setTimeout(function(){ playSound('levelup'); }, 500);
+
+  // Achievement popups
+  for (var na = 0; na < newAchievements.length; na++) {
+    (function(ach, delay){
+      setTimeout(function(){ showAchievement(ach.icon, ach.name); }, delay);
+    })(newAchievements[na], 1200 + na * 2500);
+  }
+}
+
+/* ===== CONFETTI ===== */
+function spawnConfetti() {
+  var container = document.getElementById('confetti-container');
+  container.innerHTML = '';
+  var colors = ['#FF9800','#FFC107','#4CAF50','#2196F3','#E91E63','#9C27B0','#FF5722'];
+  for (var i = 0; i < 60; i++) {
+    var piece = document.createElement('div');
+    piece.className = 'confetti-piece';
+    piece.style.left = Math.random()*100 + '%';
+    piece.style.background = colors[Math.floor(Math.random()*colors.length)];
+    piece.style.width = (6+Math.random()*8) + 'px';
+    piece.style.height = (6+Math.random()*8) + 'px';
+    piece.style.borderRadius = Math.random()>.5 ? '50%' : '2px';
+    piece.style.animationDuration = (1.5+Math.random()*2) + 's';
+    piece.style.animationDelay = (Math.random()*1) + 's';
+    container.appendChild(piece);
+  }
+  setTimeout(function(){ container.innerHTML = ''; }, 4500);
+}
+
+/* ===== ACHIEVEMENT POPUP ===== */
+function showAchievement(iconFile, text) {
+  var el = document.getElementById('achievement-popup');
+  el.innerHTML = '<img src="images/' + iconFile + '" alt="" class="game-img"> ' + text;
+  el.classList.add('show');
+  playSound('success');
+  setTimeout(function(){ el.classList.remove('show'); }, 2500);
+}
+
+/* ===== INIT ===== */
+initTitle();
+
+// Resume audio context on first interaction
+document.addEventListener('click', function(){ getAudio(); }, {once:true});
+document.addEventListener('touchstart', function(){ getAudio(); }, {once:true});
+
+})();
+</script>
+</body>
+</html>

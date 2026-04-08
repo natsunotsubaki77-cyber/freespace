@@ -493,9 +493,19 @@ function playSound(type) {
       o2.connect(g2); g2.gain.setValueAtTime(.12,now+.08); g2.gain.exponentialRampToValueAtTime(.001,now+.15);
       o2.start(now+.08); o2.stop(now+.15);
     } else if (type === 'coin') {
-      o = ctx.createOscillator(); o.type='sine'; o.frequency.setValueAtTime(1400,now); o.frequency.exponentialRampToValueAtTime(2000,now+.08);
-      o.connect(g); g.gain.setValueAtTime(.1,now); g.gain.exponentialRampToValueAtTime(.001,now+.12);
-      o.start(now); o.stop(now+.12);
+      // チャリン（高音の金属音を2回重ねる）
+      o = ctx.createOscillator(); o.type='sine'; o.frequency.value=4200;
+      o.connect(g); g.gain.setValueAtTime(.12,now); g.gain.exponentialRampToValueAtTime(.001,now+.18);
+      o.start(now); o.stop(now+.2);
+      var o2c = ctx.createOscillator(); o2c.type='sine'; o2c.frequency.value=5600;
+      var g2c = ctx.createGain(); g2c.connect(ctx.destination);
+      o2c.connect(g2c); g2c.gain.setValueAtTime(.08,now+.03); g2c.gain.exponentialRampToValueAtTime(.001,now+.15);
+      o2c.start(now+.03); o2c.stop(now+.18);
+      // 低い金属の余韻
+      var o3c = ctx.createOscillator(); o3c.type='sine'; o3c.frequency.value=2800;
+      var g3c = ctx.createGain(); g3c.connect(ctx.destination);
+      o3c.connect(g3c); g3c.gain.setValueAtTime(.06,now); g3c.gain.exponentialRampToValueAtTime(.001,now+.25);
+      o3c.start(now); o3c.stop(now+.28);
     } else if (type === 'success') {
       var notes = [523,659,784,1047];
       for (var si = 0; si < notes.length; si++) {

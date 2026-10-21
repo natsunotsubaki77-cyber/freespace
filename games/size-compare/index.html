@@ -298,13 +298,23 @@ const ITEMS = [
   { name:'H3ロケット', kname:'H3ロケット', en:'JAXA H3 LAUNCH VEHICLE', size:63, dim:'h', vb:[30,100], color:'#d9a46a',
     memo:'JAXAの新しい主力ロケット。全長約63m、直径約5.2m。', kmemo:'にほんの あたらしい ロケット。たかさ やく 63メートル。',
     shapes:[R(10,0,10,100)] },
+  { name:'ギザの大ピラミッド', kname:'ピラミッド', en:'GREAT PYRAMID OF GIZA', size:138.5, dim:'h', vb:[100,64], color:'#d8b56a',
+    memo:'エジプト・クフ王のピラミッド。いまの高さ約138m（できた時は約147m）。', kmemo:'エジプトに ある おおきな おはか。4500ねんくらい まえに つくられたよ。',
+    shapes:[P([[0,64],[100,64],[50,0]]), ['#b8944f', P([[50,0],[100,64],[62,64]])]] },
+  { name:'エベレスト', kname:'エベレスト', en:'MOUNT EVEREST', size:8849, dim:'h', vb:[300,100], color:'#6a7f99', fitW:2.2,
+    memo:'世界最高峰。標高8,849m。', kmemo:'せかいで いちばん たかい やま。ふじさんの 2ばい いじょう。',
+    shapes:['M0 100L60 70L95 40L115 50L150 0L175 30L195 22L240 65L300 100Z',
+            ['#fff', 'M150 0L175 30L168 34L160 26L152 36L144 26L136 32L132 24Z']] },
+  { name:'ブルジュ・ハリファ', kname:'ブルジュ・ハリファ', en:'BURJ KHALIFA', size:828, dim:'h', vb:[20,100], color:'#9fb3c8',
+    memo:'ドバイにある世界一高いビル。高さ828m。', kmemo:'せかいで いちばん たかい ビル。スカイツリーより たかいよ。',
+    shapes:[P([[0,100],[20,100],[18,70],[16,45],[13,25],[11,10],[10.3,0],[9.7,0],[9,10],[7,25],[4,45],[2,70]])] },
 ];
 
 const USER = { name:'あなた', kname:'きみ', en:'YOU', dim:'h', vb:[40,100], color:'#ff8a3d', shapes:personShapes(), isUser:true };
 
 // 写真っぽい画像（images/*.webp）。読みこめたら形の絵のかわりに使う
 const IMG_KEYS = ['hamster','cat','rabbit','shiba','penguin','adult','vending','bear','elephant','freed','giraffe',
-  'trex','nara_daibutsu','torii','whale','shinkansen','himeji','toji','jumbo','ushiku','harukas','tokyotower','skytree','fuji','mirai','skybus','ferris','h3'];
+  'trex','nara_daibutsu','torii','whale','shinkansen','himeji','toji','jumbo','ushiku','harukas','tokyotower','skytree','fuji','mirai','skybus','ferris','h3','pyramid','everest','burj'];
 ITEMS.forEach((it, i) => it.img = IMG_KEYS[i]);
 USER.img = 'kid';
 const kidLook = {};

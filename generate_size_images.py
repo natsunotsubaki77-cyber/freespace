@@ -57,7 +57,10 @@ images = {
     "harukas": "Abeno Harukas skyscraper in Osaka, tall glass tower with setbacks on one side, seen from the front, complete building from base to top.",
     "tokyotower": "Tokyo Tower, the red and white lattice steel tower, seen from the front, complete tower from the four legs to the antenna.",
     "skytree": "Tokyo Skytree, the tall slender white-blue tower with two observation decks, seen from the front, complete tower from base to antenna tip, very tall and thin.",
-    "fuji": "Mount Fuji, the symmetrical volcano with a snow-capped peak and blue-purple slopes, complete mountain from the wide base to the summit, wide shape.",
+    "pyramid": "The Great Pyramid of Giza (Pyramid of Khufu) in Egypt, sandy limestone stepped surface with no smooth casing stones left anywhere (not the Khafre pyramid), flat-ish top, seen from the front, complete pyramid from base to the top, no sphinx, no other pyramids.",
+    "everest": "Mount Everest, the rocky Himalayan peak with snow and ice, sharp summit pyramid, clear sky with no clouds or snow plume, complete mountain from the wide base to the summit, wide shape.",
+    "burj": "Burj Khalifa skyscraper in Dubai, very tall slender silver glass tower with stepped setbacks and a long spire, seen from the front, complete building from base to spire tip, very tall and thin.",
+    "fuji": "Mount Fuji,the symmetrical volcano with a snow-capped peak and blue-purple slopes, complete mountain from the wide base to the summit, wide shape.",
 }
 
 

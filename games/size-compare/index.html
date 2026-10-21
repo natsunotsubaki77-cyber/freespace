@@ -295,13 +295,16 @@ const ITEMS = [
   { name:'葛西臨海公園 ダイヤと花の大観覧車', kname:'かさいりんかいこうえんの だいかんらんしゃ', en:'DIAMOND AND FLOWER FERRIS WHEEL, KASAI', size:117, dim:'h', vb:[100,100], color:'#d8dde4',
     memo:'東京・江戸川区。直径111m、高さ117mと日本最大級の観覧車。', kmemo:'とうきょうに ある とても おおきな かんらんしゃ。たかさ 117メートル。',
     shapes:[E(50,50,48), P([[50,50],[30,100],[34,100],[50,58],[66,100],[70,100]])] },
+  { name:'H3ロケット', kname:'H3ロケット', en:'JAXA H3 LAUNCH VEHICLE', size:63, dim:'h', vb:[30,100], color:'#d9a46a',
+    memo:'JAXAの新しい主力ロケット。全長約63m、直径約5.2m。', kmemo:'にほんの あたらしい ロケット。たかさ やく 63メートル。',
+    shapes:[R(10,0,10,100)] },
 ];
 
 const USER = { name:'あなた', kname:'きみ', en:'YOU', dim:'h', vb:[40,100], color:'#ff8a3d', shapes:personShapes(), isUser:true };
 
 // 写真っぽい画像（images/*.webp）。読みこめたら形の絵のかわりに使う
 const IMG_KEYS = ['hamster','cat','rabbit','shiba','penguin','adult','vending','bear','elephant','freed','giraffe',
-  'trex','nara_daibutsu','torii','whale','shinkansen','himeji','toji','jumbo','ushiku','harukas','tokyotower','skytree','fuji','mirai','skybus','ferris'];
+  'trex','nara_daibutsu','torii','whale','shinkansen','himeji','toji','jumbo','ushiku','harukas','tokyotower','skytree','fuji','mirai','skybus','ferris','h3'];
 ITEMS.forEach((it, i) => it.img = IMG_KEYS[i]);
 USER.img = 'kid';
 const kidLook = {};

@@ -38,6 +38,7 @@ images = {
     "adult": "A Japanese adult man standing straight, arms relaxed at the sides, facing the viewer, full body from head to shoes, navy casual jacket, white shirt and gray trousers. Soft even studio lighting on the face, no harsh shadows.",
     "mirai": "Chubu Electric Power MIRAI TOWER (former Nagoya TV Tower) in Nagoya, the steel lattice tower with its four legs, observation decks and antenna, seen from the front, complete tower from base to top.",
     "skybus": "The red open-top double-decker sightseeing bus SKY BUS TOKYO, with the upper deck open air, no text on the body." + SIDE,
+    "h3": "The JAXA H3 rocket standing upright on its launch pad base, white body with orange-brown first stage insulation, two solid rocket boosters, seen from the side, complete rocket from bottom to nose tip, no launch tower, no text.",
     "ferris": "The Diamond and Flower Ferris Wheel at Kasai Rinkai Park in Tokyo, a giant white ferris wheel with colorful gondolas and its support legs, seen from the front, complete wheel including the base.",
     "vending": "A typical Japanese drink vending machine with rows of colorful drink bottles behind glass, seen from the front.",
     "bear": "A large brown bear (Ussuri brown bear) standing up on its hind legs, facing the viewer, full body.",

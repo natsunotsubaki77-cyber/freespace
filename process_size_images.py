@@ -13,6 +13,7 @@ RAW = os.path.join(BASE, "raw")
 OUT = os.path.join(BASE, "images")
 MAX_SIDE = 900
 EDGE = 3  # 境目からこのpx以内は 背景色の混ざりを取りのぞく
+CROP_BOTTOM = {"h3": 0.135}  # 発射台など、大きさに入れない下の部分（割合）
 SPILL_ALL = {"freed", "jumbo", "shinkansen", "skybus"}  # 窓ごしに背景が写る絵は 全体のにじみを消す
 
 
@@ -55,6 +56,9 @@ def process(name):
     box = Image.fromarray(((alpha > 0.25) * 255).astype(np.uint8)).getbbox()
     if box:
         im = im.crop(box)
+    if name in CROP_BOTTOM:
+        im = im.crop((0, 0, im.width, round(im.height * (1 - CROP_BOTTOM[name]))))
+        im = im.crop(im.getchannel("A").point(lambda v: 255 if v > 64 else 0).getbbox())
     w, h = im.size
     k = MAX_SIDE / max(w, h)
     if k < 1:

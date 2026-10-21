@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>くるまくらべ</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="theme-color" content="#0b1220">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="くるまくらべ">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-top:#0b1220; --bg-mid:#1a2638; --horizon:#3a4a5e;
+    --ink:#eef1f5; --sub:#9aa6b6; --faint:#5d6a7c; --accent:#e6b25c; --cyan:#5cc8e6;
+    --glass:rgba(255,255,255,.06); --line:rgba(255,255,255,.14);
+  }
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body {
+    min-height:100vh; color:var(--ink);
+    background:var(--bg-top) radial-gradient(120% 60% at 50% 0%, #1a2638 0%, #0b1220 70%) no-repeat;
+    font-family:"Noto Sans JP","Hiragino Sans","Yu Gothic",sans-serif; font-weight:400;
+    padding:calc(12px + env(safe-area-inset-top)) 16px calc(28px + env(safe-area-inset-bottom));
+  }
+  html, body { overflow-x:hidden; }
+  .wrap { max-width:720px; margin:0 auto; }
+  .num { font-family:"Inter","Noto Sans JP",sans-serif; font-feature-settings:"tnum"; }
+  button, select { font-family:inherit; color:var(--ink); cursor:pointer; }
+  .glass {
+    background:var(--glass); border:1px solid var(--line); border-radius:999px;
+    backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+  }
+
+  #topbar { display:flex; justify-content:space-between; align-items:center; }
+  .back { color:var(--sub); font-size:13px; text-decoration:none; letter-spacing:.05em; }
+  .modeSwitch { display:inline-flex; padding:3px; gap:2px; }
+  .modeSwitch button {
+    border:none; background:transparent; color:var(--sub); font-size:12px; letter-spacing:.08em;
+    padding:6px 12px; border-radius:999px;
+  }
+  .modeSwitch button.on { background:rgba(255,255,255,.14); color:var(--ink); }
+
+  header { margin:22px 0 18px; }
+  .eyebrow { font-family:"Inter",sans-serif; font-size:11px; letter-spacing:.42em; color:var(--accent); }
+  h1 { font-size:26px; font-weight:300; letter-spacing:.12em; margin-top:6px; }
+
+  /* 車えらび */
+  #pickers { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:10px; }
+  .pick { border:1px solid var(--line); border-radius:14px; padding:12px 12px 10px; background:var(--glass); position:relative; min-width:0; }
+  .pick::before { content:""; position:absolute; left:12px; right:12px; top:0; height:2px; border-radius:2px; background:var(--c); }
+  .pick .tag { font-family:"Inter",sans-serif; font-size:10px; letter-spacing:.3em; color:var(--c); }
+  .pick select {
+    display:block; width:100%; margin-top:6px; background:transparent; border:none; outline:none;
+    -webkit-appearance:none; appearance:none; font-size:12px; color:var(--sub); padding:2px 0;
+  }
+  .pick select.model { font-size:17px; font-weight:500; color:var(--ink); }
+  .pick select option { background:#1a2638; color:var(--ink); }
+  .pick .en { font-family:"Inter",sans-serif; font-size:10px; letter-spacing:.18em; color:var(--faint); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  #swapBtn { display:block; margin:10px auto 0; font-size:12px; letter-spacing:.08em; padding:6px 16px; color:var(--sub); }
+
+  /* 見る向き */
+  .tabs { display:flex; justify-content:space-between; align-items:center; margin:20px 0 8px; gap:8px; }
+  .tabs .seg { flex:none; }
+  .seg { display:inline-flex; padding:3px; gap:2px; }
+  .seg button { border:none; background:transparent; color:var(--sub); font-size:13px; padding:7px 14px; border-radius:999px; letter-spacing:.06em; }
+  .seg button.on { background:rgba(255,255,255,.14); color:var(--ink); }
+  #stage { position:relative; height:min(46vh, 360px); border-radius:16px; overflow:hidden;
+           background:linear-gradient(#111a2a, #1d2a3d 78%, #0e1116 78.2%); border:1px solid rgba(255,255,255,.06); }
+  canvas { position:absolute; inset:0; width:100%; height:100%; display:block; }
+
+  /* 数字 */
+  #summary { margin:16px 2px 0; font-size:14px; line-height:1.9; color:var(--ink); }
+  #summary b { font-family:"Inter",sans-serif; font-weight:600; }
+  table { width:100%; border-collapse:collapse; margin-top:14px; font-size:13px; }
+  th, td { padding:10px 4px; border-bottom:1px solid rgba(255,255,255,.07); text-align:right; }
+  th { font-weight:400; color:var(--sub); text-align:left; }
+  thead td { font-size:11px; letter-spacing:.06em; }
+  thead td.a { color:var(--accent); } thead td.b { color:var(--cyan); }
+  td.d { color:var(--sub); }
+  td.d.plus { color:#e6e6e6; }
+  #note { margin-top:14px; font-size:11px; color:var(--faint); line-height:1.8; }
+  #note a { color:var(--faint); }
+  #shareBtn { display:block; margin:22px auto 0; font-size:13px; letter-spacing:.1em; padding:10px 26px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div id="topbar">
+    <a class="back" href="../index.html" data-t="back"></a>
+    <div class="modeSwitch glass"><button data-mode="adult">大人</button><button data-mode="kid">こども</button></div>
+  </div>
+
+  <header>
+    <div class="eyebrow">CAR SIZE COMPARISON</div>
+    <h1 data-t="title"></h1>
+  </header>
+
+  <div id="pickers">
+    <div class="pick" style="--c:var(--accent)">
+      <div class="tag">CAR A</div>
+      <select class="maker" id="makerA"></select>
+      <select class="model" id="modelA"></select>
+      <div class="en" id="enA"></div>
+    </div>
+    <div class="pick" style="--c:var(--cyan)">
+      <div class="tag">CAR B</div>
+      <select class="maker" id="makerB"></select>
+      <select class="model" id="modelB"></select>
+      <div class="en" id="enB"></div>
+    </div>
+  </div>
+  <button id="swapBtn" class="glass" data-t="swap"></button>
+
+  <div class="tabs">
+    <div class="seg glass" id="viewSeg"><button data-view="side" data-t="side"></button><button data-view="front" data-t="front"></button></div>
+    <div class="seg glass" id="laySeg"><button data-lay="over" data-t="over"></button><button data-lay="apart" data-t="apart"></button></div>
+  </div>
+  <div id="stage"><canvas id="cv"></canvas></div>
+
+  <div id="summary"></div>
+  <table>
+    <thead><tr><th></th><td class="a" id="thA"></td><td class="b" id="thB"></td><td data-t="diff"></td></tr></thead>
+    <tbody id="rows"></tbody>
+  </table>
+  <div id="note"></div>
+  <button id="shareBtn" class="glass" data-t="share"></button>
+</div>
+
+<script src="cars.js"></script>
+<script>
+// ===== データ =====
+const MAKERS = [];
+CARS.forEach(c => { if (!MAKERS.some(m => m.ja === c.maker)) MAKERS.push({ ja:c.maker, en:c.makerEn, k:c.kmaker }); });
+const byId = Object.fromEntries(CARS.map(c => [c.id, c]));
+
+// ===== ことば =====
+const UI = {
+  adult: { title:'くるまくらべ', back:'← ゲーム一覧', swap:'A と B を入れかえる', side:'横から', front:'前から',
+           over:'重ねる', apart:'並べる', diff:'差（B−A）', share:'この比較を送る', copied:'リンクをコピーしました',
+           rows:[['L','全長','mm'],['W','全幅','mm'],['H','全高','mm'],['WB','ホイールベース','mm'],['turn','最小回転半径','m']],
+           note:'寸法は各社公式サイトの主要諸元（代表グレード）より。全幅はドアミラーを含みません。絵は大きさを合わせたイメージです。',
+           len:'全長', wid:'全幅', hei:'全高',
+           more:(n,d) => `<b>${n}</b> だけ${d}`, same:'ほぼ同じ',
+           sum:(a,b,parts) => `${b} は ${a} より、${parts.join('、')}。`,
+           longer:'長い', shorter:'短い', wider:'幅が広い', narrower:'幅がせまい', taller:'背が高い', lower:'背が低い' },
+  kid:   { title:'くるまくらべ', back:'← もどる', swap:'A と B を いれかえる', side:'よこから', front:'まえから',
+           over:'かさねる', apart:'ならべる', diff:'ちがい', share:'ともだちに おくる', copied:'リンクを コピーしたよ',
+           rows:[['L','ながさ','mm'],['W','はば','mm'],['H','たかさ','mm'],['WB','タイヤの あいだ','mm'],['turn','まがれる はんけい','m']],
+           note:'ながさや はばは、くるまの かいしゃが だしている かずだよ。はばに ミラーは はいって いないよ。',
+           len:'ながさ', wid:'はば', hei:'たかさ',
+           more:(n,d) => `<b>${n}</b> ${d}`, same:'ほとんど おなじ',
+           sum:(a,b,parts) => `${b} は ${a} より、${parts.join('、')}。`,
+           longer:'ながい', shorter:'みじかい', wider:'はばが ひろい', narrower:'はばが せまい', taller:'せが たかい', lower:'せが ひくい' },
+};
+let MODE = 'adult';
+try { MODE = localStorage.getItem('carCompareMode') === 'kid' ? 'kid' : 'adult'; } catch (e) {}
+const nameOf = c => MODE === 'kid' ? c.kname : c.name;
+const makerOf = m => MODE === 'kid' ? m.k : m.ja;
+
+// ===== えらんでいる車 =====
+const params = new URLSearchParams(location.search);
+let A = byId[params.get('a')] || CARS.find(c => c.name === 'フリード') || CARS[0];
+let B = byId[params.get('b')] || CARS.find(c => c.name === 'シエンタ') || CARS[1];
+let VIEW = params.get('v') === 'front' ? 'front' : 'side';
+let LAY = 'over';
+
+function fillPicker(side) {
+  const car = side === 'A' ? A : B;
+  const mk = document.getElementById('maker' + side), md = document.getElementById('model' + side);
+  mk.innerHTML = MAKERS.map(m => `<option value="${m.ja}"${m.ja === car.maker ? ' selected' : ''}>${makerOf(m)}</option>`).join('');
+  md.innerHTML = CARS.filter(c => c.maker === car.maker)
+    .map(c => `<option value="${c.id}"${c.id === car.id ? ' selected' : ''}>${nameOf(c)}</option>`).join('');
+  document.getElementById('en' + side).textContent = `${car.makerEn} ${car.en}`;
+}
+['A', 'B'].forEach(side => {
+  const set = c => { if (side === 'A') A = c; else B = c; refresh(); };
+  document.getElementById('maker' + side).onchange = e => set(CARS.find(c => c.maker === e.target.value));
+  document.getElementById('model' + side).onchange = e => set(byId[e.target.value]);
+});
+document.getElementById('swapBtn').onclick = () => { [A, B] = [B, A]; refresh(); };
+document.querySelectorAll('[data-view]').forEach(b => b.onclick = () => { VIEW = b.dataset.view; refresh(); });
+document.querySelectorAll('[data-lay]').forEach(b => b.onclick = () => { LAY = b.dataset.lay; refresh(); });
+
+// ===== 絵 =====
+const imgs = {};
+function img(car, view) {
+  const k = car.id + '_' + view;
+  if (!imgs[k]) {
+    const im = new Image();
+    im.onload = () => { im.ok = true; tintCache = {}; draw(); };
+    im.src = `images/${k}.webp`;
+    imgs[k] = im;
+  }
+  return imgs[k];
+}
+// 絵がまだ無いときの かんたんな形
+function fallbackShape(ctx, view, x, y, w, h) {
+  ctx.beginPath();
+  if (view === 'side') {
+    ctx.roundRect(x, y + h * 0.4, w, h * 0.45, h * 0.12);
+    ctx.roundRect(x + w * 0.22, y, w * 0.6, h * 0.55, h * 0.15);
+  } else {
+    ctx.roundRect(x, y + h * 0.4, w, h * 0.5, h * 0.12);
+    ctx.roundRect(x + w * 0.1, y, w * 0.8, h * 0.55, h * 0.15);
+  }
+  ctx.fill();
+}
+// 色つきのかげ絵（ふち取りつき）を作って ためておく
+let tintCache = {};
+function tinted(car, view, color, w, h, fill = 0.22) {
+  const key = [car.id, view, color, w | 0, h | 0, fill].join('|');
+  if (tintCache[key]) return tintCache[key];
+  const pad = 3, c = document.createElement('canvas');
+  c.width = (w | 0) + pad * 2; c.height = (h | 0) + pad * 2;
+  const x = c.getContext('2d');
+  const im = img(car, view);
+  const put = (dx, dy) => im.ok ? x.drawImage(im, pad + dx, pad + dy, w, h)
+                                : (x.fillStyle = '#fff', fallbackShape(x, view, pad + dx, pad + dy, w, h));
+  // ふち
+  for (const [dx, dy] of [[-1.5,0],[1.5,0],[0,-1.5],[0,1.5],[-1,-1],[1,1],[-1,1],[1,-1]]) put(dx, dy);
+  x.globalCompositeOperation = 'source-in'; x.fillStyle = color; x.fillRect(0, 0, c.width, c.height);
+  // 中身はうすく
+  x.globalCompositeOperation = 'destination-out'; put(0, 0);
+  x.globalCompositeOperation = 'source-over'; x.globalAlpha = fill;
+  const inner = document.createElement('canvas'); inner.width = c.width; inner.height = c.height;
+  const ix = inner.getContext('2d');
+  if (im.ok) ix.drawImage(im, pad, pad, w, h); else { ix.fillStyle = '#fff'; fallbackShape(ix, view, pad, pad, w, h); }
+  ix.globalCompositeOperation = 'source-in'; ix.fillStyle = color; ix.fillRect(0, 0, c.width, c.height);
+  x.drawImage(inner, 0, 0);
+  tintCache[key] = { c, pad };
+  return tintCache[key];
+}
+function photo(ctx, car, view, x, y, w, h) {
+  const im = img(car, view);
+  if (im.ok) ctx.drawImage(im, x, y, w, h);
+  else { ctx.fillStyle = 'rgba(255,255,255,.18)'; fallbackShape(ctx, view, x, y, w, h); }
+}
+// 前の絵は ミラーがはみ出すので、高さで合わせて 横はそのままの比で広げる
+function frontW(car, s) {
+  const im = img(car, 'front');
+  const ratio = im.ok ? im.naturalWidth / im.naturalHeight : car.W / car.H;
+  return Math.max(car.W * s, car.H * s * ratio);
+}
+
+// ===== 描く =====
+const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
+let CW = 0, CH = 0;
+function resize() {
+  const r = cv.getBoundingClientRect(), dpr = Math.min(window.devicePixelRatio || 1, 3);
+  CW = r.width; CH = r.height;
+  cv.width = CW * dpr; cv.height = CH * dpr;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  tintCache = {};
+  draw();
+}
+const COL = { A:'#e6b25c', B:'#5cc8e6' };
+const fmt = n => Math.round(n).toLocaleString();
+const sign = n => (n > 0 ? '+' : n < 0 ? '−' : '±') + fmt(Math.abs(n));
+
+function dimLine(x1, y1, x2, y2, color, label, side) {
+  ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+  const vert = x1 === x2;
+  for (const [px, py] of [[x1, y1], [x2, y2]]) {
+    ctx.beginPath();
+    if (vert) { ctx.moveTo(px - 4, py); ctx.lineTo(px + 4, py); } else { ctx.moveTo(px, py - 4); ctx.lineTo(px, py + 4); }
+    ctx.stroke();
+  }
+  ctx.font = '500 11px Inter, "Noto Sans JP", sans-serif';
+  if (vert) {
+    ctx.textAlign = side === 'left' ? 'right' : 'left'; ctx.textBaseline = 'middle';
+    ctx.fillText(label, x1 + (side === 'left' ? -7 : 7), (y1 + y2) / 2);
+  } else {
+    ctx.textAlign = 'center'; ctx.textBaseline = side === 'above' ? 'bottom' : 'top';
+    ctx.fillText(label, (x1 + x2) / 2, y1 + (side === 'above' ? -5 : 5));
+  }
+}
+function dashed(x1, y1, x2, y2, color) {
+  ctx.save(); ctx.setLineDash([3, 4]); ctx.strokeStyle = color; ctx.globalAlpha = 0.7; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke(); ctx.restore();
+}
+
+function draw() {
+  if (!CW) return;
+  ctx.clearRect(0, 0, CW, CH);
+  const ground = CH * 0.78;
+  ctx.strokeStyle = 'rgba(255,255,255,.22)'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(0, ground + .5); ctx.lineTo(CW, ground + .5); ctx.stroke();
+  const cars = [['A', A], ['B', B]];
+
+  if (VIEW === 'side') {
+    const padL = 18, padR = 70, top = 34;
+    const maxL = Math.max(A.L, B.L), maxH = Math.max(A.H, B.H);
+    if (LAY === 'over') {
+      const s = Math.min((CW - padL - padR) / maxL, (ground - top) / maxH);
+      const x0 = padL;
+      overlay((c, w, h) => [x0, ground - h], 'side', c => c.L * s, c => c.H * s);
+      // 頭の位置
+      dashed(x0, top - 10, x0, ground + 18, 'rgba(255,255,255,.5)');
+      // 後ろの端と 屋根の高さ
+      for (const [k, c] of cars) {
+        dashed(x0 + c.L * s, ground - c.H * s - 6, x0 + c.L * s, ground + 18, COL[k]);
+        dashed(x0, ground - c.H * s, CW - padR + 8, ground - c.H * s, COL[k]);
+      }
+      const xa = x0 + A.L * s, xb = x0 + B.L * s;
+      if (Math.abs(xa - xb) > 1) dimLine(Math.min(xa, xb), ground + 14, Math.max(xa, xb), ground + 14, '#fff', sign(B.L - A.L) + ' mm', 'below');
+      const ya = ground - A.H * s, yb = ground - B.H * s;
+      if (Math.abs(ya - yb) > 1) dimLine(CW - padR + 14, Math.min(ya, yb), CW - padR + 14, Math.max(ya, yb), '#fff', sign(B.H - A.H), 'right');
+    } else {
+      // 上下に並べる（同じ縮尺、頭をそろえる）
+      const gap = 18, rowH = (ground - top - gap) / 2;
+      const s = Math.min((CW - padL - padR) / maxL, rowH / maxH);
+      const x0 = padL;
+      cars.forEach(([k, c], i) => {
+        const base = i === 0 ? top + rowH : ground;
+        if (i === 0) { ctx.strokeStyle = 'rgba(255,255,255,.12)'; ctx.beginPath(); ctx.moveTo(0, base + .5); ctx.lineTo(CW, base + .5); ctx.stroke(); }
+        photo(ctx, c, 'side', x0, base - c.H * s, c.L * s, c.H * s);
+        ctx.fillStyle = COL[k]; ctx.font = '600 10px Inter, sans-serif'; ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
+        ctx.fillText(k, x0 + c.L * s + 8, base - 2);
+        dashed(x0 + c.L * s, top - 6, x0 + c.L * s, ground + 18, COL[k]);
+      });
+      dashed(x0, top - 10, x0, ground + 18, 'rgba(255,255,255,.5)');
+      const xa = x0 + A.L * s, xb = x0 + B.L * s;
+      if (Math.abs(xa - xb) > 1) dimLine(Math.min(xa, xb), ground + 14, Math.max(xa, xb), ground + 14, '#fff', sign(B.L - A.L) + ' mm', 'below');
+    }
+  } else {
+    const top = 34, side = 60;
+    const maxH = Math.max(A.H, B.H);
+    if (LAY === 'over') {
+      let s = (ground - top) / maxH;
+      const maxW = Math.max(frontW(A, 1), frontW(B, 1));
+      s = Math.min(s, (CW - side * 2) / maxW);
+      const cx = CW / 2;
+      overlay((c, w, h) => [cx - w / 2, ground - h], 'front', c => frontW(c, s), c => c.H * s);
+      // 全幅（ミラーなし）の線
+      cars.forEach(([k, c], i) => {
+        const y = ground + 10 + i * 14, hw = c.W * s / 2;
+        dashed(cx - hw, ground - c.H * s * 0.5, cx - hw, y, COL[k]); dashed(cx + hw, ground - c.H * s * 0.5, cx + hw, y, COL[k]);
+        dimLine(cx - hw, y, cx + hw, y, COL[k], '', 'below');
+        dashed(cx - w2(c, s) - 6, ground - c.H * s, CW - side + 6, ground - c.H * s, COL[k]);
+      });
+      ctx.fillStyle = '#fff'; ctx.font = '500 11px Inter, sans-serif'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+      ctx.fillText(`W ${sign(B.W - A.W)} mm`, cx + Math.max(A.W, B.W) * s / 2 + 8, ground + 17);
+      const ya = ground - A.H * s, yb = ground - B.H * s;
+      if (Math.abs(ya - yb) > 1) dimLine(CW - side + 14, Math.min(ya, yb), CW - side + 14, Math.max(ya, yb), '#fff', sign(B.H - A.H), 'right');
+    } else {
+      // 左右に並べる
+      const half = CW / 2;
+      let s = (ground - top) / maxH;
+      s = Math.min(s, (half - 20) / Math.max(frontW(A, 1), frontW(B, 1)));
+      cars.forEach(([k, c], i) => {
+        const cx = half * (i + 0.5), w = frontW(c, s), hw = c.W * s / 2;
+        photo(ctx, c, 'front', cx - w / 2, ground - c.H * s, w, c.H * s);
+        dimLine(cx - hw, ground + 12, cx + hw, ground + 12, COL[k], fmt(c.W), 'below');
+        dashed(0, ground - c.H * s, CW, ground - c.H * s, COL[k]);
+      });
+    }
+  }
+}
+const w2 = (c, s) => frontW(c, s) / 2;
+// 重ねる: A は写真＋ふち、B はふち取りだけ（中はうすく）を上に
+function overlay(pos, view, wOf, hOf) {
+  const w = wOf(A), h = hOf(A), [x, y] = pos(A, w, h);
+  photo(ctx, A, view, x, y, w, h);
+  const ta = tinted(A, view, COL.A, w, h, 0);
+  ctx.drawImage(ta.c, x - ta.pad, y - ta.pad);
+  const wb = wOf(B), hb = hOf(B), [xb, yb] = pos(B, wb, hb);
+  const tb = tinted(B, view, COL.B, wb, hb, 0.18);
+  ctx.drawImage(tb.c, xb - tb.pad, yb - tb.pad);
+}
+
+// ===== 数字 =====
+function refresh() {
+  const u = UI[MODE];
+  fillPicker('A'); fillPicker('B');
+  document.querySelectorAll('[data-view]').forEach(b => b.classList.toggle('on', b.dataset.view === VIEW));
+  document.querySelectorAll('[data-lay]').forEach(b => b.classList.toggle('on', b.dataset.lay === LAY));
+  document.getElementById('thA').textContent = 'A ' + nameOf(A);
+  document.getElementById('thB').textContent = 'B ' + nameOf(B);
+  document.getElementById('rows').innerHTML = u.rows.map(([k, label, unit]) => {
+    const a = A[k], b = B[k];
+    if (a == null && b == null) return '';
+    const show = v => v == null ? '—' : (unit === 'm' ? v.toFixed(1) : fmt(v));
+    const d = a != null && b != null ? b - a : null;
+    const ds = d == null ? '—' : unit === 'm' ? (d > 0 ? '+' : d < 0 ? '−' : '±') + Math.abs(d).toFixed(1) : sign(d);
+    return `<tr><th>${label}</th><td class="num">${show(a)}</td><td class="num">${show(b)}</td><td class="num d${d > 0 ? ' plus' : ''}">${ds}</td></tr>`;
+  }).join('');
+  const part = (d, more, less, label) => Math.abs(d) < 10 ? `${label}は${u.same}` : u.more(fmt(Math.abs(d)) + 'mm', d > 0 ? more : less);
+  document.getElementById('summary').innerHTML = A.id === B.id ? '' : u.sum(nameOf(A), nameOf(B), [
+    part(B.L - A.L, u.longer, u.shorter, u.len), part(B.W - A.W, u.wider, u.narrower, u.wid), part(B.H - A.H, u.taller, u.lower, u.hei)]);
+  const src = [A, B].filter((c, i, arr) => arr.indexOf(c) === i)
+    .map(c => `<a href="${c.source}" target="_blank" rel="noopener">${c.name}（${c.grade}）</a>`).join('、');
+  document.getElementById('note').innerHTML = u.note + '<br>' + src;
+  history.replaceState(null, '', `?a=${A.id}&b=${B.id}${VIEW === 'front' ? '&v=front' : ''}`);
+  draw();
+}
+
+function setMode(m) {
+  MODE = m;
+  try { localStorage.setItem('carCompareMode', m); } catch (e) {}
+  const u = UI[MODE];
+  document.querySelectorAll('[data-t]').forEach(el => el.innerHTML = u[el.dataset.t]);
+  document.querySelectorAll('[data-mode]').forEach(b => b.classList.toggle('on', b.dataset.mode === MODE));
+  refresh();
+}
+document.querySelectorAll('[data-mode]').forEach(b => b.onclick = () => setMode(b.dataset.mode));
+
+document.getElementById('shareBtn').onclick = async () => {
+  const url = location.href, title = `${A.name} と ${B.name} の大きさくらべ`;
+  try {
+    if (navigator.share) { await navigator.share({ title, url }); return; }
+    await navigator.clipboard.writeText(url);
+    const b = document.getElementById('shareBtn'); b.textContent = UI[MODE].copied;
+    setTimeout(() => b.textContent = UI[MODE].share, 1800);
+  } catch (e) {}
+};
+
+window.addEventListener('resize', resize);
+setMode(MODE);
+resize();
+if (document.fonts) document.fonts.ready.then(draw);
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js');
+</script>
+</body>
+</html>

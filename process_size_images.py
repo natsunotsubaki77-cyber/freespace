@@ -12,7 +12,7 @@ BASE = os.path.join(os.path.dirname(__file__), "games", "size-compare")
 RAW = os.path.join(BASE, "raw")
 OUT = os.path.join(BASE, "images")
 MAX_SIDE = 900
-EDGE = 5  # 境目からこのpx以内は マゼンタのにじみを消す
+EDGE = 3  # 境目からこのpx以内は 背景色の混ざりを取りのぞく
 SPILL_ALL = {"freed", "jumbo", "shinkansen", "skybus"}  # 窓ごしに背景が写る絵は 全体のにじみを消す
 
 
@@ -27,27 +27,27 @@ def process(name):
     dist = np.linalg.norm(rgb - bgc, axis=2)
     score = np.maximum(np.clip((m - 30) / 40, 0, 1), np.clip(1 - (dist - 30) / 50, 0, 1))
 
-    # 外側からつながるマゼンタだけを背景にする
+    # 外側からつながるマゼンタだけを背景にする（鉄骨などの細い線を消さないよう、すきま埋めはしない）
     cand = score > 0.5
     lab, _ = ndimage.label(cand)
     border = np.unique(np.concatenate([lab[0], lab[-1], lab[:, 0], lab[:, -1]]))
     bg = np.isin(lab, border[border > 0])
     # しっぽの輪の中など、とじこめられた背景色も消す
     bg |= (dist < 20) | (m > 90)
-    # 背景のすきまの小さな点も背景に
-    bg = ndimage.binary_closing(bg, iterations=2) | bg
 
+    # 境目は「背景色がどれだけ混ざっているか」から透明度を出し、背景色を差し引いて色を戻す
+    m_bg = max(60.0, float(np.median(np.concatenate([m[0], m[-1], m[:, 0], m[:, -1]]))))
+    mix = np.clip((m - 20) / (m_bg * 0.9 - 20), 0, 1)
     near = ndimage.binary_dilation(bg, iterations=EDGE) & ~bg
-    alpha = np.where(bg, 0.0, 1.0)
-    alpha = np.where(near, 1 - score * 0.9, alpha)
-    alpha = ndimage.gaussian_filter(alpha, 0.7)
-    alpha[bg] = 0
+    alpha = np.where(bg, 0.0, np.where(near, 1 - mix, 1.0))
+    a = np.maximum(alpha, 0.05)[..., None]
+    out = np.where(near[..., None], (rgb - (1 - a) * bgc) / a, rgb)
 
-    # にじみ消し（境目の近くだけ）
-    spill = np.clip(m, 0, None) * (True if name in SPILL_ALL else near)
-    out = rgb.copy()
-    out[..., 0] -= spill * 0.9
-    out[..., 2] -= spill * 0.9
+    # 窓ごしに背景が写る絵は 全体のにじみも消す
+    if name in SPILL_ALL:
+        spill = np.clip(m, 0, None) * ~bg
+        out[..., 0] -= spill * 0.9
+        out[..., 2] -= spill * 0.9
     out = np.clip(out, 0, 255)
 
     rgba = np.dstack([out, alpha * 255]).astype(np.uint8)

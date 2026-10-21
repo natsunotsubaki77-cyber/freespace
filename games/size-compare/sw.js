@@ -1,5 +1,5 @@
 // 一度ひらけば オフラインでも あそべるように ファイルを ためておく
-const CACHE = 'size-compare-v1';
+const CACHE = 'size-compare-v2';
 const FILES = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png',
   './images/adult.webp','./images/bear.webp','./images/cat.webp','./images/elephant.webp','./images/ferris.webp','./images/freed.webp','./images/fuji.webp','./images/giraffe.webp','./images/hamster.webp','./images/harukas.webp','./images/himeji.webp','./images/jumbo.webp','./images/kid.webp','./images/mirai.webp','./images/nara_daibutsu.webp','./images/penguin.webp','./images/rabbit.webp','./images/shiba.webp','./images/shinkansen.webp','./images/skybus.webp','./images/skytree.webp','./images/toji.webp','./images/tokyotower.webp','./images/torii.webp','./images/trex.webp','./images/ushiku.webp','./images/vending.webp','./images/whale.webp'];
 self.addEventListener('install', e => e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES))));

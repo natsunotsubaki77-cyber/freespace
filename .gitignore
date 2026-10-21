@@ -1,3 +1,4 @@
 node_modules/
 .env
 __pycache__/
+games/size-compare/raw/

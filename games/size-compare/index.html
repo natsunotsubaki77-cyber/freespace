@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>大きさくらべ</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="theme-color" content="#0b1220">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="大きさくらべ">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-top:#0b1220; --bg-mid:#1a2638; --horizon:#3a4a5e;
+    --ink:#eef1f5; --sub:#9aa6b6; --faint:#5d6a7c; --accent:#e6b25c;
+    --glass:rgba(255,255,255,.06); --line:rgba(255,255,255,.14);
+  }
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html, body { height:100%; overflow:hidden; }
+  body {
+    background:var(--bg-top); color:var(--ink);
+    font-family:"Noto Sans JP","Hiragino Sans","Yu Gothic",sans-serif; font-weight:400;
+    user-select:none; -webkit-user-select:none;
+  }
+  .num { font-family:"Inter","Noto Sans JP",sans-serif; font-feature-settings:"tnum"; }
+  canvas { position:fixed; inset:0; width:100%; height:100%; touch-action:none; display:block; }
+  button { font-family:inherit; color:var(--ink); cursor:pointer; }
+  .glass {
+    background:var(--glass); border:1px solid var(--line); border-radius:999px;
+    backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+  }
+
+  /* 大人／子ども 切りかえ */
+  .modeSwitch { display:inline-flex; padding:3px; gap:2px; }
+  .modeSwitch button {
+    border:none; background:transparent; color:var(--sub); font-size:12px; letter-spacing:.08em;
+    padding:6px 12px; border-radius:999px;
+  }
+  .modeSwitch button.on { background:rgba(255,255,255,.14); color:var(--ink); }
+
+  /* はじめの画面 */
+  #start {
+    position:fixed; inset:0; z-index:10;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    background:radial-gradient(120% 70% at 50% 100%, #3a4a5e 0%, #1a2638 45%, #0b1220 100%);
+    padding:24px 16px; text-align:center;
+  }
+  #start .top { position:absolute; top:calc(14px + env(safe-area-inset-top)); left:16px; right:16px; display:flex; justify-content:space-between; align-items:center; }
+  .back { color:var(--sub); font-size:13px; text-decoration:none; letter-spacing:.05em; }
+  .eyebrow { font-family:"Inter",sans-serif; font-size:12px; letter-spacing:.42em; color:var(--accent); margin-bottom:14px; }
+  #start h1 { font-size:32px; font-weight:300; letter-spacing:.12em; margin-bottom:14px; }
+  #start p { font-size:14px; color:var(--sub); line-height:1.9; margin-bottom:44px; }
+  .inputRow { display:flex; align-items:center; gap:18px; margin-bottom:44px; }
+  .inputRow .step { width:44px; height:44px; font-size:20px; font-weight:300; }
+  .field { display:flex; align-items:baseline; gap:6px; border-bottom:1px solid var(--line); padding:0 6px 6px; }
+  #heightInput {
+    width:140px; background:transparent; border:none; outline:none; color:var(--ink);
+    font-family:"Inter",sans-serif; font-weight:300; font-size:64px; text-align:center;
+    -moz-appearance:textfield;
+  }
+  #heightInput::-webkit-outer-spin-button, #heightInput::-webkit-inner-spin-button { -webkit-appearance:none; margin:0; }
+  .unit { font-family:"Inter",sans-serif; font-size:18px; color:var(--sub); }
+  #goBtn {
+    font-size:15px; letter-spacing:.2em; padding:14px 46px;
+    border:1px solid var(--accent); color:var(--accent); background:transparent; border-radius:999px;
+    transition:background .2s, color .2s;
+  }
+  #goBtn:active, #goBtn:hover { background:var(--accent); color:#111; }
+  #err { color:#e28b7a; font-size:13px; height:20px; margin-top:16px; }
+
+  /* くらべる画面 */
+  #topbar { position:fixed; top:calc(12px + env(safe-area-inset-top)); left:16px; right:16px; z-index:6; display:flex; justify-content:space-between; align-items:center; }
+  #againBtn { font-size:12px; letter-spacing:.06em; padding:7px 14px; color:var(--sub); }
+  #panel { position:fixed; top:calc(58px + env(safe-area-inset-top)); left:0; right:0; z-index:5; pointer-events:none; padding:0 20px; }
+  #pEn { font-family:"Inter",sans-serif; font-size:11px; letter-spacing:.32em; color:var(--accent); min-height:14px; }
+  #pName { font-size:24px; font-weight:500; letter-spacing:.04em; margin-top:4px; line-height:1.3; }
+  #pSize { margin-top:8px; display:flex; align-items:baseline; gap:10px; }
+  #pDim { font-size:12px; color:var(--sub); letter-spacing:.1em; }
+  #pVal { font-family:"Inter",sans-serif; font-weight:300; font-size:40px; line-height:1; font-feature-settings:"tnum"; }
+  #pUnit { font-family:"Inter",sans-serif; font-size:16px; color:var(--sub); }
+  #pRatio { margin-top:8px; font-size:13px; color:var(--ink); }
+  #pRatio b { font-family:"Inter",sans-serif; font-weight:600; color:var(--accent); font-size:15px; }
+  #pMemo { margin-top:6px; font-size:12px; color:var(--sub); line-height:1.7; max-width:420px; }
+
+  #controls {
+    position:fixed; left:0; right:0; bottom:calc(22px + env(safe-area-inset-bottom)); z-index:5;
+    display:flex; justify-content:center; align-items:center; gap:14px; padding:0 16px;
+  }
+  .arrow { width:52px; height:52px; display:flex; align-items:center; justify-content:center; }
+  .arrow svg { width:18px; height:18px; stroke:var(--ink); fill:none; stroke-width:1.5; }
+  #meBtn { height:44px; padding:0 20px; font-size:13px; letter-spacing:.08em; }
+  .hidden { display:none !important; }
+</style>
+</head>
+<body>
+
+<canvas id="cv"></canvas>
+
+<div id="topbar" class="hidden">
+  <button id="againBtn" class="glass" data-t="change"></button>
+  <div class="modeSwitch glass"><button data-mode="adult">大人</button><button data-mode="kid">こども</button></div>
+</div>
+
+<div id="panel" class="hidden">
+  <div id="pEn"></div>
+  <div id="pName"></div>
+  <div id="pSize"><span id="pDim"></span><span id="pVal"></span><span id="pUnit"></span></div>
+  <div id="pRatio"></div>
+  <div id="pMemo"></div>
+</div>
+
+<div id="controls" class="hidden">
+  <button class="arrow glass" id="leftBtn" aria-label="smaller"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
+  <button id="meBtn" class="glass" data-t="me"></button>
+  <button class="arrow glass" id="rightBtn" aria-label="larger"><svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg></button>
+</div>
+
+<div id="start">
+  <div class="top">
+    <a class="back" href="../index.html" data-t="back"></a>
+    <div class="modeSwitch glass"><button data-mode="adult">大人</button><button data-mode="kid">こども</button></div>
+  </div>
+  <div class="eyebrow">SIZE COMPARISON</div>
+  <h1 data-t="title"></h1>
+  <p data-t="lead"></p>
+  <div class="inputRow">
+    <button id="minus" class="step glass">−</button>
+    <div class="field">
+      <input id="heightInput" type="number" inputmode="numeric" value="170" min="30" max="250">
+      <span class="unit">cm</span>
+    </div>
+    <button id="plus" class="step glass">+</button>
+  </div>
+  <button id="goBtn" data-t="go"></button>
+  <div id="err"></div>
+</div>
+
+<script>
+// ===== かたちを作る道具（座標は各アイテムの viewBox 内、y は下向き、下端が地面） =====
+const E = (cx, cy, rx, ry = rx) =>
+  `M${cx - rx} ${cy}a${rx} ${ry} 0 1 0 ${2 * rx} 0a${rx} ${ry} 0 1 0 ${-2 * rx} 0Z`;
+const R = (x, y, w, h) => `M${x} ${y}h${w}v${h}h${-w}Z`;
+const P = pts => 'M' + pts.map(p => p.join(' ')).join('L') + 'Z';
+const HI = 'rgba(255,255,255,.45)';
+const DK = 'rgba(0,0,0,.22)';
+
+function personShapes() {
+  return [
+    E(20, 10, 8, 9),
+    R(17, 16, 6, 7),
+    'M14 21L26 21Q33 21 34 28L37 52Q37 55 34 55L32 55L30 33L29 56L11 56L10 33L8 55L6 55Q3 55 3 52L6 28Q7 21 14 21Z',
+    'M11 55L19.5 55L19.5 98Q19.5 100 17 100L13 100Q11 100 11 97Z',
+    'M20.5 55L29 55L29 97Q29 100 27 100L23 100Q20.5 100 20.5 98Z',
+  ];
+}
+
+function pagodaShapes() {
+  const s = [R(10, 94, 30, 6)];
+  for (let i = 0; i < 5; i++) {
+    const bw = 22 - i * 2.5, rw = 48 - i * 4.5, y = 94 - i * 12.5;
+    s.push(['#7a3b2a', R(25 - bw / 2, y - 9, bw, 9)]);
+    s.push(`M${25 - rw / 2} ${y - 8}Q${25 - rw / 2 + 3} ${y - 10} ${25 - rw / 2 + 7} ${y - 12.5}L${25 + rw / 2 - 7} ${y - 12.5}Q${25 + rw / 2 - 3} ${y - 10} ${25 + rw / 2} ${y - 8}Z`);
+  }
+  s.push(R(24.2, 4, 1.6, 40));
+  for (let i = 0; i < 6; i++) s.push(E(25, 12 + i * 3.2, 2.6, 0.9));
+  s.push(E(25, 3, 1.4));
+  return s;
+}
+
+// dim: 'h' = たかさで比べる / 'w' = ながさで比べる
+const ITEMS = [
+  { name:'ハムスター', kname:'ハムスター', en:'HAMSTER', size:0.10, dim:'w', vb:[100,60], color:'#d99a5b',
+    memo:'体長約10cm。頬袋に餌をためて運ぶ。', kmemo:'ほおぶくろに たねを ためて はこぶよ。',
+    shapes:[E(48,36,40,24), E(76,30,20,18), E(68,12,6,7), E(84,13,5,6), R(28,54,10,6), R(62,54,10,6),
+            ['#fff3', E(42,42,22,12)], ['#222', E(84,26,2.5)]] },
+  { name:'ネコ', kname:'ネコ', en:'CAT', size:0.30, dim:'h', vb:[60,100], color:'#6b6f7a',
+    memo:'座った高さは約30cm。', kmemo:'すわった たかさは 30センチくらい。',
+    shapes:['M15 100Q8 100 10 80Q14 50 24 42L36 42Q46 50 50 80Q52 100 45 100Z', E(30,30,16,14),
+            P([[15,26],[17,5],[28,18]]), P([[32,18],[43,5],[45,26]]),
+            'M46 94Q64 92 58 70Q56 62 52 66Q56 74 50 86Z', ['#ffe066', E(24,29,2.5)], ['#ffe066', E(36,29,2.5)]] },
+  { name:'ウサギ', kname:'ウサギ', en:'RABBIT', size:0.40, dim:'h', vb:[60,100], color:'#b9a99a',
+    memo:'耳を立てた高さは約40cm。', kmemo:'みみを たてると 40センチくらい。',
+    shapes:[E(30,78,24,22), E(42,50,14,12), 'M37 42Q28 12 33 3Q40 0 43 20L45 40Z', 'M44 40Q46 9 53 4Q59 6 53 25L49 42Z',
+            E(7,78,6,6), E(42,97,12,3), ['#222', E(48,47,2)]] },
+  { name:'柴犬', kname:'しばいぬ', en:'SHIBA INU', size:0.55, dim:'h', vb:[100,80], color:'#c9772f',
+    memo:'日本原産の犬種。天然記念物に指定されている。', kmemo:'にほんで むかしから いる いぬだよ。',
+    shapes:[E(45,40,32,14), 'M60 30L70 12L86 24L76 46Z', E(78,22,13,11), 'M86 18L99 24L97 30L84 32Z',
+            P([[69,15],[71,0],[79,10]]), P([[78,11],[84,0],[88,15]]),
+            R(18,44,7,36), R(29,46,7,34), R(57,46,7,34), R(67,44,7,36), E(14,24,8,8),
+            ['#fff6', E(80,30,8,5)], ['#222', E(84,19,1.8)]] },
+  { name:'コウテイペンギン', kname:'コウテイペンギン', en:'EMPEROR PENGUIN', size:1.20, dim:'h', vb:[50,100], color:'#2c3440',
+    memo:'現生ペンギンで最大の種。南極に暮らす。', kmemo:'いちばん おおきな ペンギン。なんきょくに すんでいるよ。',
+    shapes:['M8 40Q-2 60 2 76Q9 60 12 48Z', 'M42 40Q52 60 48 76Q41 60 38 48Z',
+            'M25 0Q36 0 37 14Q38 22 36 28Q48 50 46 78Q44 96 32 98L18 98Q6 96 4 78Q2 50 14 28Q12 22 13 14Q14 0 25 0Z',
+            ['#f4f1e8', 'M25 30Q38 40 38 70Q37 92 25 95Q13 92 12 70Q12 40 25 30Z'],
+            ['#f6b93b', E(31,24,5,4)], ['#f6b93b', P([[34,10],[45,16],[34,18]])],
+            ['#f6b93b', E(18,98,8,2.2)], ['#f6b93b', E(32,98,8,2.2)]] },
+  { name:'成人男性', kname:'おとなの おとこの ひと', en:'ADULT MALE', size:1.71, dim:'h', vb:[40,100], color:'#4a5568',
+    memo:'日本人成人男性の平均身長は約171cm。', kmemo:'にほんの おとなの おとこの ひとは へいきん 171センチくらい。',
+    shapes:personShapes() },
+  { name:'自動販売機', kname:'じどうはんばいき', en:'VENDING MACHINE', size:1.83, dim:'h', vb:[55,100], color:'#d9534f',
+    memo:'一般的な飲料自販機の高さは約1.83m。', kmemo:'まちで よく みる のみものの じはんき。',
+    shapes:[R(0,0,55,100), [HI, R(5,6,45,38)], [DK, R(5,48,45,4)], [HI, R(38,56,8,16)], ['#333', R(8,80,32,10)]] },
+  { name:'ヒグマ', kname:'ヒグマ', en:'BROWN BEAR', size:2.50, dim:'h', vb:[60,100], color:'#5b3a22',
+    memo:'後ろ足で立ち上がると2.5mに達する。', kmemo:'うしろあしで たちあがると 2.5メートルにも なるよ。',
+    shapes:[E(19,7,5), E(41,7,5), E(30,55,22,32), E(30,17,13,12), 'M10 34Q-1 46 4 62Q9 63 13 50Z', 'M50 34Q61 46 56 62Q51 63 47 50Z',
+            R(13,78,13,22), R(34,78,13,22), ['#8a6040', E(30,22,6,4)], ['#111', E(25,14,1.6)], ['#111', E(35,14,1.6)]] },
+  { name:'アフリカゾウ', kname:'アフリカゾウ', en:'AFRICAN ELEPHANT', size:3.30, dim:'h', vb:[100,70], color:'#7d8590',
+    memo:'陸上最大の動物。肩高は約3.3m。', kmemo:'りくに すむ どうぶつで いちばん おおきい。',
+    shapes:[E(42,30,32,22), R(16,38,12,32), R(30,42,12,28), R(52,42,12,28), R(64,38,12,32), E(78,22,16,16),
+            'M88 24Q99 34 97 58Q96 65 91 62Q90 40 82 34Z', 'M10 26Q4 36 6 48L8 48Q8 36 12 30Z',
+            [DK, E(71,25,10,13)], ['#f4efe2', 'M86 36Q92 44 98 42Q92 40 89 33Z'], ['#111', E(84,17,1.6)]] },
+  { name:'ホンダ フリード', kname:'ホンダ フリード', en:'HONDA FREED', size:4.31, dim:'w', real:[4.31,1.755], vb:[100,50], color:'#3d7dd8',
+    memo:'全長4,310mm × 全高1,755mm。', kmemo:'ながさ 4メートル31センチの くるま。',
+    shapes:['M3 40L3 22Q3 17 9 17L20 16L25 4Q26 0 32 0L84 0Q92 0 94 6L97 18Q100 20 100 26L100 40Z',
+            [HI, 'M30 4L57 4L57 16L25 16Z'], [HI, 'M61 4L84 4Q89 4 90 8L93 16L61 16Z'],
+            ['#222', E(22,40,10)], ['#222', E(80,40,10)], ['#ccc', E(22,40,4)], ['#ccc', E(80,40,4)]] },
+  { name:'キリン', kname:'キリン', en:'GIRAFFE', size:5.00, dim:'h', vb:[70,100], color:'#e0a43a',
+    memo:'地上で最も背の高い動物。', kmemo:'せが いちばん たかい どうぶつ。',
+    shapes:[E(28,52,22,11), 'M38 50L55 9L64 13L51 53Z', E(62,9,7,5), 'M62 5L70 9L68 14L59 13Z',
+            R(56.5,0,1.6,5), R(60.5,0,1.6,5), P([[55,6],[49,4],[55,10]]),
+            R(10,56,4,44), R(17,58,4,42), R(37,58,4,42), R(44,56,4,44), 'M6 50L2 70L4 70L8 52Z',
+            ['#a0652066', E(20,50,4,3)], ['#a0652066', E(32,48,4,3)], ['#a0652066', E(26,56,3,2.5)], ['#a0652066', E(52,30,2.5,3)],
+            ['#111', E(63,8,1)]] },
+  { name:'ティラノサウルス', kname:'ティラノサウルス', en:'TYRANNOSAURUS REX', size:12, dim:'w', vb:[100,34], color:'#4d7a45',
+    memo:'白亜紀後期の大型肉食恐竜。全長約12m。', kmemo:'むかしの おおきな にくしょく きょうりゅう。',
+    shapes:['M0 14Q20 10 40 9Q55 8 62 12Q70 6 78 4L96 4Q100 4 100 9L100 14L88 16L86 18L80 18Q72 20 66 24Q60 28 52 26L50 22Q30 22 0 15Z',
+            'M40 18Q52 15 54 24L50 31L55 34L44 34L46 30L42 24Z', 'M47 20Q59 18 59 26L57 31L61 34L51 34L53 30Z',
+            'M70 20L75 26L73 27L68 22Z', ['#fff', E(90,7,1.3,1)]] },
+  { name:'奈良の大仏', kname:'ならの だいぶつ', en:'GREAT BUDDHA OF NARA', size:15, dim:'h', vb:[100,100], color:'#5d5240',
+    memo:'東大寺の盧舎那仏。像高約15m、752年開眼。', kmemo:'とうだいじの だいぶつ。すわって 15メートル。',
+    shapes:[['#f2d77a88', E(50,42,40,40)], E(50,78,44,12), 'M24 76Q20 50 30 38L70 38Q80 50 76 76Z',
+            E(50,26,13,15), E(50,12,11,6), R(34,22,3,14), R(63,22,3,14), ['#8a6d3b', 'M5 100L95 100L88 86L12 86Z']] },
+  { name:'厳島神社 大鳥居', kname:'いつくしまじんじゃの おおとりい', en:'ITSUKUSHIMA O-TORII', size:16.6, dim:'h', vb:[100,70], color:'#cf3a2c',
+    memo:'海上に立つ朱塗りの鳥居。高さ16.6m。', kmemo:'うみの なかに たつ あかい とりい。',
+    shapes:['M0 0Q50 10 100 0L100 7Q50 15 0 7Z', R(6,9,88,4), R(4,20,92,5),
+            P([[21,10],[28,10],[30,70],[19,70]]), P([[72,10],[79,10],[81,70],[70,70]]), R(46,12,8,9),
+            R(8,40,4,30), R(88,40,4,30), R(8,40,20,3), R(72,40,20,3)] },
+  { name:'シロナガスクジラ', kname:'シロナガスクジラ', en:'BLUE WHALE', size:25, dim:'w', vb:[100,22], color:'#4b6a8f',
+    memo:'地球史上最大の動物。全長約25m。', kmemo:'ちきゅうで いちばん おおきい どうぶつ。',
+    shapes:['M0 8L6 4L10 8Q20 6 40 4Q70 0 90 4Q100 7 99 12Q96 18 80 19Q50 22 20 16L10 12L6 18L0 14L4 11Z',
+            'M64 16L56 22L71 18Z', [HI, 'M70 15Q85 18 97 13Q96 17 80 19Q72 19 70 15Z'], ['#111', E(86,10,0.8)]] },
+  { name:'新幹線 N700A 先頭車', kname:'しんかんせん N700A', en:'SHINKANSEN N700A', size:27.35, dim:'w', real:[27.35,3.6], vb:[100,15], color:'#f3f5f8',
+    memo:'東海道・山陽新幹線。先頭車の全長27.35m。', kmemo:'いちばん まえの 1りょうの ながさだよ。',
+    shapes:['M0 1L58 1Q80 1 92 6Q100 10 100 12.5L100 13L0 13Z', ['#1d4fa0', R(0,9,97,1.6)],
+            ['#25324a', R(4,4,52,2.2)], ['#25324a', 'M66 3Q76 3 82 6L70 6Z'], ['#333', R(0,13,100,1.2)],
+            ['#333', E(12,14,1.2)], ['#333', E(20,14,1.2)], ['#333', E(78,14,1.2)], ['#333', E(86,14,1.2)]] },
+  { name:'姫路城', kname:'ひめじじょう', en:'HIMEJI CASTLE', size:46, dim:'h', vb:[100,100], color:'#4a5a6a',
+    memo:'世界遺産。石垣を含めた高さ約46m。', kmemo:'しろくて うつくしい おしろ。せかいいさん。',
+    shapes:[['#8a8d91', P([[10,100],[90,100],[82,70],[18,70]])],
+            ['#f4f2ea', R(20,58,60,12)], 'M12 60L88 60L80 52L20 52Z',
+            ['#f4f2ea', R(26,44,48,9)], 'M18 46L82 46L74 38L26 38Z', P([[38,40],[50,32],[62,40]]),
+            ['#f4f2ea', R(32,28,36,10)], 'M24 30L76 30L68 22L32 22Z',
+            ['#f4f2ea', R(38,14,24,8)], 'M30 15L70 15L62 7L38 7Z', R(39,3,2,4), R(59,3,2,4)] },
+  { name:'東寺 五重塔', kname:'とうじの ごじゅうのとう', en:'TO-JI PAGODA', size:55, dim:'h', vb:[50,100], color:'#3b3f46',
+    memo:'高さ約55m。日本一高い木造の塔。', kmemo:'きで できた とうで にほん いちばん たかい。',
+    shapes:pagodaShapes() },
+  { name:'ボーイング 787-9', kname:'ボーイング 787-9', en:'BOEING 787-9', size:62.81, dim:'w', real:[62.81,17.02], vb:[100,28], color:'#e9edf2',
+    memo:'全長62.81m × 全高17.02m。', kmemo:'おおきな りょかくき。ながさ 62メートル。',
+    shapes:['M2 12L0 0L6 0L18 9Z', 'M2 12Q2 8 8 8L80 8Q92 8 98 13Q100 15 96 16L10 17Q2 17 2 12Z', 'M68 8Q78 1 90 9Z',
+            ['#9aa5b4', 'M40 14L62 14L46 21L36 21Z'], ['#9aa5b4', E(48,19,4,1.6)],
+            ['#1d4fa0', R(12,10.5,72,1)], ['#555', R(20,17,1,8)], ['#555', R(52,17,1,8)], ['#555', R(86,16,1,9)],
+            ['#222', E(20.5,26,2)], ['#222', E(52.5,26,2)], ['#222', E(86.5,26,2)]] },
+  { name:'牛久大仏', kname:'うしくだいぶつ', en:'USHIKU DAIBUTSU', size:120, dim:'h', vb:[40,100], color:'#9aa39d',
+    memo:'台座を含め高さ120m。世界最大級のブロンズ立像。', kmemo:'たっている だいぶつ。だいも いれて 120メートル。',
+    shapes:[E(20,10,5,6), E(20,4.5,4,3), 'M10 20Q20 16 30 20L32 50Q34 70 30 82L10 82Q6 70 8 50Z',
+            'M30 30L36 24L37.5 26L32 34Z', ['#7c847f', 'M6 88L34 88L30 82L10 82Z'], ['#6c736f', R(4,88,32,12)]] },
+  { name:'あべのハルカス', kname:'あべのハルカス', en:'ABENO HARUKAS', size:300, dim:'h', vb:[30,100], color:'#6d7f95',
+    memo:'大阪・阿倍野。高さ300m。', kmemo:'おおさかに ある たかい ビル。',
+    shapes:[P([[2,100],[28,100],[28,0],[16,0],[16,20],[10,20],[10,45],[5,45],[5,70],[2,70]]),
+            [HI, R(19,2,2,98)], [HI, R(12,22,1.5,78)], [HI, R(6.5,47,1.2,53)]] },
+  { name:'東京タワー', kname:'とうきょうタワー', en:'TOKYO TOWER', size:333, dim:'h', vb:[40,100], color:'#e8452c',
+    memo:'1958年完成。高さ333m。', kmemo:'あかと しろの とう。333メートル。',
+    shapes:['M0 100Q12 70 17 40L18 20L19.4 0L20.6 0L22 20L23 40Q28 70 40 100L32 100Q24 78 20 66Q16 78 8 100Z',
+            R(8,82,24,1.5), R(12,62,16,1.2), ['#fff', R(13,39,14,4)], ['#fff', R(16.5,20,7,3)],
+            ['#fff', R(18.4,50,3.2,6)], ['#fff', R(19,8,2,4)]] },
+  { name:'東京スカイツリー', kname:'とうきょうスカイツリー', en:'TOKYO SKYTREE', size:634, dim:'h', vb:[14,100], color:'#a9c1d4',
+    memo:'世界一高い自立式電波塔。高さ634m。', kmemo:'にほんで いちばん たかい とう。634メートル。',
+    shapes:['M0 100L5 40L5.5 10L6.6 0L7.4 0L8.5 10L9 40L14 100Z', ['#6d8aa3', R(3.4,44,7.2,2.6)], ['#6d8aa3', R(4.6,28,4.8,1.8)]] },
+  { name:'富士山', kname:'ふじさん', en:'MOUNT FUJI', size:3776, dim:'h', vb:[300,100], color:'#4a6fa5', fitW:2.2,
+    memo:'日本最高峰。標高3,776m。', kmemo:'にほんで いちばん たかい やま。',
+    shapes:['M0 100Q80 90 125 20Q132 8 140 2L160 2Q168 8 175 20Q220 90 300 100Z',
+            ['#fff', 'M125 20Q132 8 140 2L160 2Q168 8 175 20L169 25L162 19L155 28L148 21L141 30L134 21L130 26Z']] },
+  { name:'中部電力 MIRAI TOWER', kname:'ちゅうぶでんりょく ミライタワー', en:'CHUBU ELECTRIC POWER MIRAI TOWER', size:180, dim:'h', vb:[40,100], color:'#8c96a3',
+    memo:'名古屋・久屋大通公園。1954年完成、高さ180m。旧 名古屋テレビ塔。', kmemo:'なごやに ある とう。むかしの なまえは なごやテレビとう。',
+    shapes:['M0 100Q12 70 17 40L18 20L19.4 0L20.6 0L22 20L23 40Q28 70 40 100L32 100Q24 78 20 66Q16 78 8 100Z'] },
+  { name:'スカイバス東京（2階建てバス）', kname:'スカイバスとうきょう（2かいだてバス）', en:'SKY BUS TOKYO', size:12, dim:'w', real:[12,3.8], vb:[100,32], color:'#c8302a',
+    memo:'丸の内を走るオープントップの2階建て観光バス。全長約12m・全高約3.8m。', kmemo:'やねの ない 2かいだての バス。とうきょうの まちを はしるよ。',
+    shapes:[R(0,0,100,28), ['#222', E(20,28,4)], ['#222', E(80,28,4)]] },
+  { name:'葛西臨海公園 ダイヤと花の大観覧車', kname:'かさいりんかいこうえんの だいかんらんしゃ', en:'DIAMOND AND FLOWER FERRIS WHEEL, KASAI', size:117, dim:'h', vb:[100,100], color:'#d8dde4',
+    memo:'東京・江戸川区。直径111m、高さ117mと日本最大級の観覧車。', kmemo:'とうきょうに ある とても おおきな かんらんしゃ。たかさ 117メートル。',
+    shapes:[E(50,50,48), P([[50,50],[30,100],[34,100],[50,58],[66,100],[70,100]])] },
+];
+
+const USER = { name:'あなた', kname:'きみ', en:'YOU', dim:'h', vb:[40,100], color:'#ff8a3d', shapes:personShapes(), isUser:true };
+
+// 写真っぽい画像（images/*.webp）。読みこめたら形の絵のかわりに使う
+const IMG_KEYS = ['hamster','cat','rabbit','shiba','penguin','adult','vending','bear','elephant','freed','giraffe',
+  'trex','nara_daibutsu','torii','whale','shinkansen','himeji','toji','jumbo','ushiku','harukas','tokyotower','skytree','fuji','mirai','skybus','ferris'];
+ITEMS.forEach((it, i) => it.img = IMG_KEYS[i]);
+USER.img = 'kid';
+const kidLook = {};
+const imagesReady = Promise.all([...ITEMS, USER].map(it => new Promise(done => {
+  const im = new Image();
+  im.onload = () => { it.image = im; it.vb = [im.naturalWidth, im.naturalHeight]; done(); };
+  im.onerror = () => done();
+  im.src = `images/${it.img}.webp`;
+}))).then(() => { kidLook.image = USER.image; kidLook.vb = USER.vb; });
+
+// ===== 状態 =====
+const cv = document.getElementById('cv');
+const ctx = cv.getContext('2d');
+let W = 0, H = 0, DPR = 1;
+let list = [];         // ならんだアイテム
+let userIdx = 0;
+let t = 0, target = 0; // いま見ている位置（アイテム番号、小数あり）
+let dragging = false, lastX = 0, lastTime = 0, vel = 0;
+let running = false;
+
+const pathCache = new Map();
+const getPath = d => { let p = pathCache.get(d); if (!p) { p = new Path2D(d); pathCache.set(d, p); } return p; };
+
+function build(heightM) {
+  USER.size = heightM;
+  // 150cm 以上なら 自分を大人の写真にし、同じ写真の「成人男性」は外す
+  const grown = heightM >= 1.5, adult = ITEMS.find(it => it.img === 'adult');
+  if (kidLook.image && adult.image) Object.assign(USER, grown ? { image: adult.image, vb: adult.vb } : kidLook);
+  list = [...ITEMS.filter(it => !(grown && it === adult)), USER].sort((a, b) => a.size - b.size);
+  // 小さい順に、いまの集まりの右・左へ交互に置いていく（少し重ねて、大きいものは後ろ）
+  let L = 0, R = 0;
+  list.forEach((it, i) => {
+    const [vw, vh] = it.vb;
+    if (it.real) { [it.w, it.h] = it.real; } // 長さも高さも本物どおり
+    else if (it.dim === 'h') { it.h = it.size; it.w = it.size * vw / vh; }
+    else { it.w = it.size; it.h = it.size * vh / vw; }
+    if (i === 0) { it.x = it.w / 2; it.side = 1; L = 0; R = it.w; }
+    else {
+      it.side = i % 2 ? 1 : -1;
+      const ov = Math.min(it.w * 0.45, (R - L) * 0.55);
+      it.x = it.side > 0 ? R + it.w / 2 - ov : L - it.w / 2 + ov;
+      L = Math.min(L, it.x - it.w / 2); R = Math.max(R, it.x + it.w / 2);
+    }
+    it.L = L; it.R = R; // ここまでの集まりのはば
+  });
+  userIdx = list.indexOf(USER);
+  drawOrder = [...list].sort((a, b) => b.h - a.h); // 大きいものから描く＝後ろ
+}
+let drawOrder = [];
+
+const groundY = () => H * 0.80;
+
+// アイテム i が出たときのカメラ：i までの集まりが入って、i がいちばん大きく見える
+function frame(i) {
+  const it = list[i];
+  const usable = groundY() - H * 0.38;
+  const s = Math.min(usable * 0.92 / it.h, W * (it.fitW || 0.92) / (it.R - it.L));
+  const cx = (it.R - it.L) * s > W ? it.x : (it.L + it.R) / 2;
+  return { cx, s };
+}
+
+function camera(tt) {
+  const i = Math.max(0, Math.min(list.length - 2, Math.floor(tt)));
+  let f = Math.max(0, Math.min(1, tt - i));
+  if (tt >= list.length - 1) f = 1;
+  const a = frame(i), b = frame(i + 1);
+  const sf = f * f * (3 - 2 * f); // なめらかに
+  const s = Math.exp(Math.log(a.s) * (1 - sf) + Math.log(b.s) * sf);
+  // 中心は「画面上で」なめらかに動くよう、倍率で重みをつける
+  const cx = (a.cx * a.s * (1 - sf) + b.cx * b.s * sf) / (a.s * (1 - sf) + b.s * sf);
+  return { cx, s };
+}
+
+// 出てくるときの ぽんっ という大きさ
+const easeOutBack = v => { const c = 1.7; return 1 + (c + 1) * Math.pow(v - 1, 3) + c * Math.pow(v - 1, 2); };
+
+// ===== 描画 =====
+function niceStep(raw) {
+  const p = Math.pow(10, Math.floor(Math.log10(raw)));
+  const n = raw / p;
+  return (n < 1.5 ? 1 : n < 3.5 ? 2 : n < 7.5 ? 5 : 10) * p;
+}
+function fmtLen(m) {
+  if (m < 1) return `${+(m * 100).toFixed(0)}cm`;
+  if (m < 10) return `${+m.toFixed(2)}m`;
+  if (m < 100) return `${+m.toFixed(1)}m`;
+  return `${Math.round(m).toLocaleString()}m`;
+}
+
+const nameOf = it => MODE === 'kid' ? it.kname : it.name;
+
+function drawItem(it, left, top, pw, ph) {
+  if (it.image) { ctx.drawImage(it.image, left, top, pw, ph); return; }
+  const [vw, vh] = it.vb;
+  ctx.translate(left, top);
+  ctx.scale(pw / vw, ph / vh);
+  for (const sh of it.shapes) {
+    if (typeof sh === 'string') { ctx.fillStyle = it.color; ctx.fill(getPath(sh)); }
+    else { ctx.fillStyle = sh[0]; ctx.fill(getPath(sh[1])); }
+  }
+}
+
+function draw() {
+  const { cx, s } = camera(t);
+  const gy = groundY();
+  const toX = x => (x - cx) * s + W / 2;
+
+  // 空
+  const sky = ctx.createLinearGradient(0, 0, 0, gy);
+  sky.addColorStop(0, '#0b1220'); sky.addColorStop(0.55, '#1a2638'); sky.addColorStop(1, '#3a4a5e');
+  ctx.fillStyle = sky; ctx.fillRect(0, 0, W, gy);
+  const glow = ctx.createLinearGradient(0, gy - H * 0.18, 0, gy);
+  glow.addColorStop(0, 'rgba(230,178,92,0)'); glow.addColorStop(1, 'rgba(230,178,92,.10)');
+  ctx.fillStyle = glow; ctx.fillRect(0, gy - H * 0.18, W, H * 0.18);
+
+  // 目もり
+  const step = niceStep((gy - H * 0.3) / 3 / s);
+  ctx.font = '400 10px Inter, sans-serif'; ctx.textAlign = 'right'; ctx.textBaseline = 'bottom';
+  for (let k = 1; ; k++) {
+    const y = Math.round(gy - k * step * s) + 0.5;
+    if (y < 0) break;
+    ctx.strokeStyle = 'rgba(255,255,255,.06)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,.32)'; ctx.fillText(fmtLen(k * step), W - 10, y - 3);
+  }
+
+  // 床
+  const floor = ctx.createLinearGradient(0, gy, 0, H);
+  floor.addColorStop(0, '#171d26'); floor.addColorStop(1, '#090c11');
+  ctx.fillStyle = floor; ctx.fillRect(0, gy, W, H - gy);
+
+  // 出ているものと大きさを先に計算
+  const shown = [];
+  drawOrder.forEach(it => {
+    const i = list.indexOf(it);
+    const vis = Math.max(0, Math.min(1, (t - i + 1) / 0.6));
+    if (vis <= 0) return;
+    const k = 0.4 + 0.6 * easeOutBack(vis);
+    const pw = it.w * s * k, ph = it.h * s * k;
+    const mid = toX(it.x), left = mid - pw / 2;
+    if (left > W || left + pw < 0) return;
+    if (ph < 0.6 && !it.isUser) return;
+    shown.push({ it, i, vis, pw, ph, mid, left });
+  });
+
+  // 床への うつりこみ
+  ctx.save();
+  ctx.beginPath(); ctx.rect(0, gy, W, H - gy); ctx.clip();
+  for (const d of shown) {
+    ctx.save();
+    ctx.globalAlpha = Math.min(1, d.vis * 1.5) * 0.16;
+    ctx.translate(0, 2 * gy); ctx.scale(1, -1);
+    drawItem(d.it, d.left, gy - d.ph, d.pw, d.ph);
+    ctx.restore();
+  }
+  ctx.restore();
+  const fade = ctx.createLinearGradient(0, gy, 0, gy + Math.max(60, (H - gy) * 0.7));
+  fade.addColorStop(0, 'rgba(14,18,24,0)'); fade.addColorStop(1, 'rgba(10,13,18,1)');
+  ctx.fillStyle = fade; ctx.fillRect(0, gy, W, H - gy);
+  ctx.fillStyle = 'rgba(255,255,255,.16)'; ctx.fillRect(0, gy, W, 1);
+
+  // かげ と 本体
+  const focus = Math.round(t);
+  const labels = [];
+  for (const d of shown) {
+    const { it, i, vis, pw, ph, mid, left } = d;
+    ctx.save();
+    ctx.globalAlpha = Math.min(1, vis * 1.5);
+    const sw = pw * 0.55, sh = Math.max(1.5, Math.min(pw * 0.05, 14));
+    const shadow = ctx.createRadialGradient(mid, gy, 0, mid, gy, sw);
+    shadow.addColorStop(0, 'rgba(0,0,0,.55)'); shadow.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = shadow;
+    ctx.save(); ctx.translate(mid, gy); ctx.scale(1, sh / sw); ctx.translate(-mid, -gy);
+    ctx.beginPath(); ctx.arc(mid, gy, sw, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+    drawItem(it, left, gy - ph, pw, ph);
+    ctx.restore();
+
+    if (it.isUser) {
+      ctx.fillStyle = '#e6b25c';
+      ctx.fillRect(mid - Math.max(6, pw * 0.4), gy + 3, Math.max(12, pw * 0.8), 2);
+      // ちいさくて見えないときは 上に しるし
+      if (ph < 14 && mid > -20 && mid < W + 20) {
+        ctx.strokeStyle = '#e6b25c'; ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.moveTo(mid - 6, gy - ph - 16); ctx.lineTo(mid, gy - ph - 8); ctx.lineTo(mid + 6, gy - ph - 16); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(mid, gy - ph - 8); ctx.lineTo(mid, gy - ph - 30); ctx.stroke();
+      }
+    }
+    if (ph > 26 || i === focus || it.isUser) labels.push({ it, i, mid });
+  }
+
+  // なまえ（見ているもの → 自分 → 大きいもの の順に、重ならないところへ）
+  labels.sort((a, b) => (b.i === focus) - (a.i === focus) || b.it.isUser - a.it.isUser || b.it.h - a.it.h);
+  const placed = [];
+  ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+  if ('letterSpacing' in ctx) ctx.letterSpacing = '0.06em';
+  for (const lb of labels) {
+    const big = lb.i === focus;
+    ctx.font = `${big ? 500 : 400} ${big ? 13 : 11}px "Noto Sans JP", sans-serif`;
+    const text = nameOf(lb.it);
+    const tw = ctx.measureText(text).width + 10;
+    const x0 = Math.max(tw / 2 + 4, Math.min(W - tw / 2 - 4, lb.mid));
+    for (const row of [0, 1, 2]) {
+      const y = gy + 12 + row * 18;
+      if (placed.some(p => p.row === row && Math.abs(p.x - x0) < (p.tw + tw) / 2)) continue;
+      placed.push({ x: x0, tw, row });
+      ctx.fillStyle = lb.it.isUser ? '#e6b25c' : big ? '#eef1f5' : 'rgba(238,241,245,.5)';
+      ctx.fillText(text, x0, y);
+      break;
+    }
+  }
+  if ('letterSpacing' in ctx) ctx.letterSpacing = '0px';
+
+  // 見ているものの 高さの線
+  const f = list[focus];
+  if (f && f.dim === 'h') {
+    const ph = f.h * s, mid = toX(f.x), pw = f.w * s;
+    if (ph > 30) {
+      const lx = Math.round(f.side > 0 ? Math.min(W - 12, mid + pw / 2 + 10) : Math.max(12, mid - pw / 2 - 10)) + 0.5;
+      ctx.strokeStyle = 'rgba(230,178,92,.85)'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(lx, gy); ctx.lineTo(lx, gy - ph);
+      ctx.moveTo(lx - 4, gy - ph); ctx.lineTo(lx + 4, gy - ph);
+      ctx.moveTo(lx - 4, gy); ctx.lineTo(lx + 4, gy); ctx.stroke();
+    }
+  }
+}
+
+// ===== 上の表示 =====
+const UI = {
+  adult: { title:'大きさくらべ', lead:'身長を入力して、ハムスターから富士山まで<br>大きさを比べてみましょう。', go:'比べる',
+           back:'← ゲーム一覧', change:'身長を変える', me:'自分に戻る', err:'30〜250 の数値を入力してください', loading:'読み込み中…',
+           h:'高さ', w:'全長', you:'あなたの身長', youMemo:'左へ行くほど小さく、右へ行くほど大きくなります。',
+           same:'あなたとほぼ同じ', times:n => `あなたの <b>${n}</b> 倍`, frac:n => `あなたの 約 <b>1/${n}</b>` },
+  kid:   { title:'おおきさくらべ', lead:'きみの しんちょうを いれて、<br>ハムスターから ふじさんまで くらべてみよう！', go:'くらべる',
+           back:'← もどる', change:'しんちょうを かえる', me:'じぶんに もどる', err:'30から 250の かずを いれてね', loading:'よみこみちゅう…',
+           h:'たかさ', w:'ながさ', you:'きみの しんちょう', youMemo:'ひだりは ちいさい もの、みぎは おおきい もの。',
+           same:'きみと おなじ くらい', times:n => `きみの やく <b>${n}</b> ばい`, frac:n => `きみの やく <b>${n}ぶんの1</b>` },
+};
+let MODE = 'adult';
+try { MODE = localStorage.getItem('sizeCompareMode') === 'kid' ? 'kid' : 'adult'; } catch (e) {}
+
+function setMode(m) {
+  MODE = m;
+  try { localStorage.setItem('sizeCompareMode', m); } catch (e) {}
+  const u = UI[MODE];
+  document.querySelectorAll('[data-t]').forEach(el => el.innerHTML = u[el.dataset.t]);
+  document.querySelectorAll('[data-mode]').forEach(b => b.classList.toggle('on', b.dataset.mode === MODE));
+  shownIdx = -1;
+  if (running) updatePanel();
+}
+document.querySelectorAll('[data-mode]').forEach(b => b.onclick = () => setMode(b.dataset.mode));
+
+function splitLen(m) {
+  if (m < 1) return [String(Math.round(m * 100)), 'cm'];
+  if (m < 100) return [String(+m.toFixed(2)), 'm'];
+  return [Math.round(m).toLocaleString(), 'm'];
+}
+function ratioHTML(it) {
+  const u = UI[MODE];
+  const r = it.size / USER.size;
+  if (r > 0.95 && r < 1.05) return u.same;
+  if (r >= 1) return u.times(r < 10 ? +r.toFixed(1) : Math.round(r).toLocaleString());
+  return u.frac(Math.round(1 / r));
+}
+let shownIdx = -1;
+function updatePanel() {
+  const i = Math.round(t);
+  if (i === shownIdx) return;
+  shownIdx = i;
+  const it = list[i], u = UI[MODE];
+  const [val, unit] = splitLen(it.size);
+  document.getElementById('pEn').textContent = it.en;
+  document.getElementById('pName').textContent = nameOf(it);
+  document.getElementById('pDim').textContent = it.isUser ? u.you : it.dim === 'h' ? u.h : u.w;
+  document.getElementById('pVal').textContent = val;
+  document.getElementById('pUnit').textContent = unit;
+  document.getElementById('pRatio').innerHTML = it.isUser ? '' : ratioHTML(it);
+  document.getElementById('pMemo').textContent = it.isUser ? u.youMemo : MODE === 'kid' ? it.kmemo : it.memo;
+}
+
+// ===== うごき =====
+const clampT = v => Math.max(0, Math.min(list.length - 1, v));
+function loop() {
+  if (!running) return;
+  if (!dragging) {
+    vel *= 0.92;
+    if (Math.abs(vel) > 0.002) { t = clampT(t + vel); target = Math.round(t); }
+    else { vel = 0; t += (target - t) * 0.12; if (Math.abs(target - t) < 0.0005) t = target; }
+  }
+  draw();
+  updatePanel();
+  requestAnimationFrame(loop);
+}
+
+const dragUnit = () => Math.max(160, W * 0.55); // 1つ分すすむのに必要な px
+
+cv.addEventListener('pointerdown', e => {
+  if (!running) return;
+  dragging = true; lastX = e.clientX; lastTime = performance.now(); vel = 0;
+  cv.setPointerCapture(e.pointerId);
+});
+cv.addEventListener('pointermove', e => {
+  if (!dragging) return;
+  const now = performance.now();
+  const dt = -(e.clientX - lastX) / dragUnit();
+  t = clampT(t + dt);
+  const ms = Math.max(1, now - lastTime);
+  vel = vel * 0.6 + (dt / ms * 16) * 0.4;
+  lastX = e.clientX; lastTime = now;
+});
+const endDrag = () => {
+  if (!dragging) return;
+  dragging = false;
+  if (performance.now() - lastTime > 80) vel = 0;
+  vel = Math.max(-0.35, Math.min(0.35, vel));
+  target = Math.round(clampT(t + vel * 8));
+  if (Math.abs(vel) < 0.02) vel = 0;
+};
+cv.addEventListener('pointerup', endDrag);
+cv.addEventListener('pointercancel', endDrag);
+cv.addEventListener('wheel', e => {
+  if (!running) return;
+  e.preventDefault(); vel = 0;
+  t = clampT(t + (e.deltaY + e.deltaX) / 500);
+  target = Math.round(t);
+}, { passive:false });
+
+const go = d => { vel = 0; target = clampT(Math.round(target) + d); };
+document.getElementById('leftBtn').onclick = () => go(-1);
+document.getElementById('rightBtn').onclick = () => go(1);
+document.getElementById('meBtn').onclick = () => { vel = 0; target = userIdx; };
+addEventListener('keydown', e => {
+  if (!running) return;
+  if (e.key === 'ArrowLeft') go(-1);
+  if (e.key === 'ArrowRight') go(1);
+});
+
+function resize() {
+  DPR = Math.min(window.devicePixelRatio || 1, 3);
+  W = innerWidth; H = innerHeight;
+  cv.width = W * DPR; cv.height = H * DPR;
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  if (running) draw();
+}
+addEventListener('resize', resize);
+resize();
+
+// ===== はじめの画面 =====
+const input = document.getElementById('heightInput');
+const err = document.getElementById('err');
+const GAME_IDS = ['panel', 'controls', 'topbar'];
+const bump = d => { input.value = Math.max(30, Math.min(250, (parseInt(input.value) || 170) + d)); };
+document.getElementById('minus').onclick = () => bump(-1);
+document.getElementById('plus').onclick = () => bump(1);
+document.getElementById('goBtn').onclick = async () => {
+  const cm = parseFloat(input.value);
+  if (!(cm >= 30 && cm <= 250)) { err.textContent = UI[MODE].err; return; }
+  err.textContent = UI[MODE].loading;
+  input.blur();
+  await imagesReady;
+  err.textContent = '';
+  build(cm / 100);
+  t = target = userIdx; vel = 0; shownIdx = -1;
+  document.getElementById('start').classList.add('hidden');
+  GAME_IDS.forEach(id => document.getElementById(id).classList.remove('hidden'));
+  running = true;
+  requestAnimationFrame(loop);
+};
+document.getElementById('againBtn').onclick = () => {
+  running = false;
+  document.getElementById('start').classList.remove('hidden');
+  GAME_IDS.forEach(id => document.getElementById(id).classList.add('hidden'));
+};
+setMode(MODE);
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js');
+</script>
+</body>
+</html>

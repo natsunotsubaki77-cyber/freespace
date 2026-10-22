@@ -3,3 +3,4 @@ node_modules/
 __pycache__/
 games/size-compare/raw/
 games/car-compare/raw/
+games/park-builder/raw/

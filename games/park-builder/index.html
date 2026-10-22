@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>こうえんを つくろう</title>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; -webkit-user-select: none; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #cfe8b0; font-family: "Hiragino Maru Gothic ProN", "BIZ UDPGothic", sans-serif; }
+  img { -webkit-user-drag: none; pointer-events: none; }
+
+  #stage { position: fixed; inset: 0; background: center / cover no-repeat; touch-action: none; }
+
+  /* 左の遊具だな：たてにスクロール */
+  #tray { position: fixed; left: 0; top: 0; bottom: 0; width: clamp(120px, 20vw, 200px); padding: 14px 12px;
+    background: rgba(255, 249, 235, .88); border-right: 4px solid #e2c99a; border-radius: 0 28px 28px 0;
+    overflow-y: auto; overscroll-behavior: contain; display: flex; flex-direction: column; gap: 14px; z-index: 50; }
+  .card { flex: none; aspect-ratio: 1; border-radius: 22px; background: #fff; border: 3px solid #f0dfbd;
+    display: grid; place-items: center; padding: 10px; touch-action: pan-y; box-shadow: 0 4px 0 #ead6ae; }
+  .card img { width: 100%; height: 100%; object-fit: contain; }
+  .card:active { transform: scale(.95); }
+
+  /* 公園に置いた遊具。left/top は足もとの位置 */
+  .item { position: absolute; transform: translate(-50%, -100%); touch-action: none; }
+  .item img { width: 100%; display: block; filter: drop-shadow(0 6px 4px rgba(40, 70, 20, .25)); transform: scaleX(var(--flip, 1)); transition: transform .25s; }
+  .item.pop { animation: pop .35s cubic-bezier(.3, 1.6, .5, 1); }
+  .item.lift img { filter: drop-shadow(0 18px 10px rgba(40, 70, 20, .3)); transform: scaleX(var(--flip, 1)) scale(1.06); }
+  .item.bye { animation: bye .3s ease-in forwards; }
+  @keyframes pop { 0% { transform: translate(-50%, -100%) scale(.3); } 100% { transform: translate(-50%, -100%) scale(1); } }
+  @keyframes bye { to { transform: translate(-50%, -100%) scale(0) rotate(30deg); opacity: 0; } }
+
+  #ghost { position: fixed; z-index: 100; pointer-events: none; transform: translate(-50%, -85%) scale(1.05); opacity: .9; }
+  #ghost img { width: 100%; filter: drop-shadow(0 16px 10px rgba(0, 0, 0, .25)); }
+
+  /* 色えらび */
+  #palette { position: absolute; display: none; gap: 10px; padding: 10px 12px; border-radius: 40px;
+    background: rgba(255, 255, 255, .95); box-shadow: 0 6px 16px rgba(0, 0, 0, .18); z-index: 60; transform: translate(-50%, 0); }
+  #palette.show { display: flex; }
+  #palette button { width: 46px; height: 46px; border-radius: 50%; border: 4px solid #fff; box-shadow: 0 0 0 2px #ddd; cursor: pointer; }
+  #palette button.on { box-shadow: 0 0 0 4px #ffb84d; }
+  #palette button.flip { background: #fff7e6; display: grid; place-items: center; padding: 0; margin-left: 6px; }
+  #palette button.flip svg { width: 30px; }
+
+  /* ごみばこ：遊具を持っているときだけ出る */
+  #trash { position: fixed; right: 20px; bottom: 20px; width: 92px; height: 92px; border-radius: 50%;
+    background: #fff; box-shadow: 0 6px 14px rgba(0, 0, 0, .2); display: grid; place-items: center; z-index: 55;
+    transform: scale(0); transition: transform .2s; }
+  #trash.show { transform: scale(1); }
+  #trash.hot { transform: scale(1.25); background: #ffe1dc; }
+  #trash svg { width: 58px; }
+</style>
+</head>
+<body>
+<div id="stage"></div>
+<div id="tray"></div>
+<div id="palette"></div>
+<div id="trash">
+  <svg viewBox="0 0 60 64">
+    <path d="M10 18h40l-4 40q-1 4-5 4H19q-4 0-5-4z" fill="#8fc7a8" stroke="#4f8a6a" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M22 26v26M30 26v26M38 26v26" stroke="#4f8a6a" stroke-width="3" stroke-linecap="round"/>
+    <rect x="5" y="10" width="50" height="9" rx="4.5" fill="#a8d9bd" stroke="#4f8a6a" stroke-width="3"/>
+    <path d="M23 10q0-6 7-6t7 6" fill="none" stroke="#4f8a6a" stroke-width="3"/>
+  </svg>
+</div>
+
+<script>
+// 遊具のリスト。h は「いちばん手前に置いたときの高さ（画面の高さに対する割合）」
+const ITEMS = [
+  { id: 'slide', h: 0.42 },
+  { id: 'swing', h: 0.36 },
+];
+// 赤い絵の色をかえる（灰色の柱やくさりは そのまま）
+const COLORS = [
+  { c: '#e5483d', f: '' },
+  { c: '#f5c531', f: 'hue-rotate(58deg) saturate(1.4) brightness(1.2)' },
+  { c: '#5fbf5a', f: 'hue-rotate(105deg) brightness(1.05)' },
+  { c: '#3d8fe0', f: 'hue-rotate(205deg) brightness(1.05)' },
+  { c: '#f07fb8', f: 'hue-rotate(320deg) saturate(.75) brightness(1.25)' },
+];
+const HORIZON = 0.50; // これより上（空や森）には置けない
+const FRONT = 0.97;   // いちばん手前
+
+const stage = document.getElementById('stage');
+const tray = document.getElementById('tray');
+const palette = document.getElementById('palette');
+const trash = document.getElementById('trash');
+stage.style.backgroundImage = 'url(images/bg_forest.webp)';
+
+// ===== 音（ポン！） =====
+let ac;
+function pon(freq = 520) {
+  try {
+    ac = ac || new (window.AudioContext || window.webkitAudioContext)();
+    const o = ac.createOscillator(), g = ac.createGain(), t = ac.currentTime;
+    o.type = 'sine';
+    o.frequency.setValueAtTime(freq, t);
+    o.frequency.exponentialRampToValueAtTime(freq * 2.2, t + 0.08);
+    g.gain.setValueAtTime(0.35, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + 0.25);
+    o.connect(g).connect(ac.destination);
+    o.start(t); o.stop(t + 0.26);
+  } catch (e) {}
+}
+
+// ===== 大きさ：奥ほど小さく =====
+function sizeAt(item, y) {
+  const H = innerHeight;
+  const depth = Math.max(0, Math.min(1, (y / H - HORIZON) / (FRONT - HORIZON)));
+  return item.h * H * (0.45 + 0.55 * depth); // 高さ(px)
+}
+function widthFor(item, img, y) {
+  const r = img.naturalWidth / img.naturalHeight || 1;
+  return sizeAt(item, y) * r;
+}
+const clampY = y => Math.max(innerHeight * (HORIZON + 0.06), Math.min(innerHeight * FRONT, y));
+const trayRight = () => tray.getBoundingClientRect().right;
+const clampX = x => Math.max(trayRight() + 40, Math.min(innerWidth - 40, x));
+
+// ===== 遊具だな =====
+ITEMS.forEach(item => {
+  const card = document.createElement('div');
+  card.className = 'card';
+  card.innerHTML = `<img src="images/${item.id}.webp" alt="">`;
+  tray.appendChild(card);
+  card.addEventListener('pointerdown', e => startFromTray(e, item, card));
+});
+
+let ghost = null;
+function startFromTray(e, item, card) {
+  const sx = e.clientX, sy = e.clientY;
+  let dragging = false;
+  const move = ev => {
+    const dx = ev.clientX - sx, dy = ev.clientY - sy;
+    // 横（公園のほう）に引っぱったら持ち上げる。たてに動かしたときはスクロール
+    if (!dragging && (dx > 12 && dx > Math.abs(dy) || ev.pointerType === 'mouse' && Math.hypot(dx, dy) > 8)) {
+      dragging = true;
+      card.releasePointerCapture?.(ev.pointerId);
+      ghost = document.createElement('div');
+      ghost.id = 'ghost';
+      ghost.innerHTML = `<img src="images/${item.id}.webp" alt="">`;
+      document.body.appendChild(ghost);
+      hidePalette();
+    }
+    if (dragging) {
+      const img = ghost.firstChild;
+      ghost.style.width = widthFor(item, img, clampY(ev.clientY)) + 'px';
+      ghost.style.left = ev.clientX + 'px';
+      ghost.style.top = ev.clientY + 'px';
+    }
+  };
+  const up = ev => {
+    removeEventListener('pointermove', move);
+    removeEventListener('pointerup', up);
+    removeEventListener('pointercancel', up);
+    if (!dragging) return;
+    ghost.remove(); ghost = null;
+    if (ev.type === 'pointerup' && ev.clientX > trayRight()) place(item, clampX(ev.clientX), clampY(ev.clientY));
+  };
+  addEventListener('pointermove', move);
+  addEventListener('pointerup', up);
+  addEventListener('pointercancel', up);
+}
+
+// ===== 公園に置く =====
+function place(item, x, y) {
+  const el = document.createElement('div');
+  el.className = 'item pop';
+  el.innerHTML = `<img src="images/${item.id}.webp" alt="">`;
+  el.data = { item, x, y, color: 0 };
+  stage.appendChild(el);
+  layout(el);
+  el.addEventListener('animationend', () => el.classList.remove('pop'), { once: true });
+  el.addEventListener('pointerdown', e => grab(e, el));
+  pon();
+}
+function layout(el) {
+  const d = el.data, img = el.firstChild;
+  const set = () => {
+    el.style.left = d.x + 'px';
+    el.style.top = d.y + 'px';
+    el.style.width = widthFor(d.item, img, d.y) + 'px';
+    el.style.zIndex = Math.round(d.y); // 手前のものが上
+  };
+  img.complete ? set() : img.addEventListener('load', set, { once: true });
+}
+
+// ===== 置いた遊具を動かす・さわる =====
+function grab(e, el) {
+  e.preventDefault();
+  const d = el.data;
+  const sx = e.clientX, sy = e.clientY, ox = d.x - sx, oy = d.y - sy;
+  let moved = false;
+  el.setPointerCapture(e.pointerId);
+  const move = ev => {
+    if (!moved && Math.hypot(ev.clientX - sx, ev.clientY - sy) < 8) return;
+    if (!moved) { moved = true; el.classList.add('lift'); trash.classList.add('show'); hidePalette(); }
+    d.x = clampX(ev.clientX + ox);
+    d.y = clampY(ev.clientY + oy);
+    layout(el);
+    trash.classList.toggle('hot', overTrash(ev));
+  };
+  const up = ev => {
+    el.removeEventListener('pointermove', move);
+    el.removeEventListener('pointerup', up);
+    el.removeEventListener('pointercancel', up);
+    el.classList.remove('lift');
+    trash.classList.remove('show', 'hot');
+    if (!moved) { showPalette(el); return; }
+    if (overTrash(ev)) { el.classList.add('bye'); el.addEventListener('animationend', () => el.remove()); pon(260); }
+  };
+  el.addEventListener('pointermove', move);
+  el.addEventListener('pointerup', up);
+  el.addEventListener('pointercancel', up);
+}
+function overTrash(ev) {
+  const r = trash.getBoundingClientRect();
+  return Math.hypot(ev.clientX - (r.left + r.width / 2), ev.clientY - (r.top + r.height / 2)) < r.width * 0.9;
+}
+
+// ===== 色えらび =====
+let paletteFor = null;
+COLORS.forEach((col, i) => {
+  const b = document.createElement('button');
+  b.style.background = col.c;
+  b.addEventListener('pointerdown', e => {
+    e.stopPropagation();
+    if (!paletteFor) return;
+    paletteFor.data.color = i;
+    paletteFor.firstChild.style.filter = col.f ? col.f + ' drop-shadow(0 6px 4px rgba(40,70,20,.25))' : '';
+    [...palette.children].forEach((x, k) => x.classList.toggle('on', k === i && x !== flipBtn));
+    paletteFor.classList.remove('pop'); void paletteFor.offsetWidth; paletteFor.classList.add('pop');
+    pon(700 + i * 60);
+  });
+  palette.appendChild(b);
+});
+// 左右の向きをかえるボタン
+const flipBtn = document.createElement('button');
+flipBtn.className = 'flip';
+flipBtn.innerHTML = '<svg viewBox="0 0 40 40"><path d="M20 6v28" stroke="#c9a46a" stroke-width="3" stroke-dasharray="4 4"/>'
+  + '<path d="M15 12L4 20l11 8z" fill="#f08a5d"/><path d="M25 12l11 8-11 8z" fill="#5da8f0"/></svg>';
+flipBtn.addEventListener('pointerdown', e => {
+  e.stopPropagation();
+  if (!paletteFor) return;
+  paletteFor.data.flip = !paletteFor.data.flip;
+  paletteFor.style.setProperty('--flip', paletteFor.data.flip ? -1 : 1);
+  pon(600);
+});
+palette.appendChild(flipBtn);
+function showPalette(el) {
+  paletteFor = el;
+  const r = el.getBoundingClientRect();
+  palette.style.left = Math.max(trayRight() + 150, Math.min(innerWidth - 150, r.left + r.width / 2)) + 'px';
+  palette.style.top = Math.min(innerHeight - 80, r.bottom + 10) + 'px';
+  [...palette.children].forEach((x, k) => x.classList.toggle('on', k === el.data.color && x !== flipBtn));
+  palette.classList.add('show');
+}
+function hidePalette() { palette.classList.remove('show'); paletteFor = null; }
+stage.addEventListener('pointerdown', e => { if (e.target === stage) hidePalette(); });
+
+addEventListener('resize', () => document.querySelectorAll('.item').forEach(layout));
+</script>
+</body>
+</html>

@@ -14,7 +14,9 @@ OUT = os.path.join(BASE, "images")
 MAX_SIDE = 900
 EDGE = 3  # 境目からこのpx以内は 背景色の混ざりを取りのぞく
 CROP_BOTTOM = {"h3": 0.135}  # 発射台など、大きさに入れない下の部分（割合）
-SPILL_ALL = {"freed", "jumbo", "shinkansen", "skybus"}  # 窓ごしに背景が写る絵は 全体のにじみを消す
+KEEP_INSIDE = {"roomy"}  # 窓の中は穴をあけず、外とつながる背景だけ消す
+FLIP = {"roomy"}  # 左むきに できた絵は 右むきに なおす
+SPILL_ALL = {"freed", "roomy", "jumbo", "shinkansen", "shinkansen_mid", "skybus"}  # 窓ごしに背景が写る絵は 全体のにじみを消す
 
 
 def process(name):
@@ -34,7 +36,8 @@ def process(name):
     border = np.unique(np.concatenate([lab[0], lab[-1], lab[:, 0], lab[:, -1]]))
     bg = np.isin(lab, border[border > 0])
     # しっぽの輪の中など、とじこめられた背景色も消す
-    bg |= (dist < 20) | (m > 90)
+    if name not in KEEP_INSIDE:
+        bg |= (dist < 20) | (m > 90)
 
     # 境目は「背景色がどれだけ混ざっているか」から透明度を出し、背景色を差し引いて色を戻す
     m_bg = max(60.0, float(np.median(np.concatenate([m[0], m[-1], m[:, 0], m[:, -1]]))))
@@ -59,6 +62,8 @@ def process(name):
     if name in CROP_BOTTOM:
         im = im.crop((0, 0, im.width, round(im.height * (1 - CROP_BOTTOM[name]))))
         im = im.crop(im.getchannel("A").point(lambda v: 255 if v > 64 else 0).getbbox())
+    if name in FLIP:
+        im = im.transpose(Image.FLIP_LEFT_RIGHT)
     w, h = im.size
     k = MAX_SIDE / max(w, h)
     if k < 1:

@@ -26,6 +26,7 @@ STYLE = (
     "Background: one completely flat solid pure magenta color (#FF00FF) filling everything behind the subject. "
     "No ground, no floor, no shadow, no scenery, no other objects, no text, no watermark."
 )
+FLAT = " Viewed from very far away at the height of its middle, straight-on flat front elevation, no perspective distortion, not looking up from below."
 SIDE = " Seen exactly from the side (profile view), facing right."
 
 images = {
@@ -39,17 +40,19 @@ images = {
     "mirai": "Chubu Electric Power MIRAI TOWER (former Nagoya TV Tower) in Nagoya, the steel lattice tower with its four legs, observation decks and antenna, seen from the front, complete tower from base to top.",
     "skybus": "The red open-top double-decker sightseeing bus SKY BUS TOKYO, with the upper deck open air, no text on the body." + SIDE,
     "h3": "The JAXA H3 rocket standing upright on its launch pad base, white body with orange-brown first stage insulation, two solid rocket boosters, seen from the side, complete rocket from bottom to nose tip, no launch tower, no text.",
-    "ferris": "The Diamond and Flower Ferris Wheel at Kasai Rinkai Park in Tokyo, a giant white ferris wheel with colorful gondolas and its support legs, seen from the front, complete wheel including the base.",
+    "ferris": "The Diamond and Flower Ferris Wheel at Kasai Rinkai Park in Tokyo, a giant white ferris wheel with colorful gondolas and its support legs, seen from the front, complete wheel including the base." + FLAT,
     "vending": "A typical Japanese drink vending machine with rows of colorful drink bottles behind glass, seen from the front.",
     "bear": "A large brown bear (Ussuri brown bear) standing up on its hind legs, facing the viewer, full body.",
     "elephant": "An African elephant with tusks standing on all four legs." + SIDE,
     "freed": "A white Honda Freed compact minivan (third generation, 2024 model), no license plate text." + SIDE,
+    "roomy": "A red Toyota Roomy compact tall-wagon (2020 facelift model) with sliding rear doors, no license plate text." + SIDE,
     "giraffe": "A giraffe standing with its long neck straight up, full body including legs." + SIDE,
     "trex": "A realistic Tyrannosaurus rex dinosaur walking, full body from head to tip of tail, horizontal posture." + SIDE,
     "nara_daibutsu": "The Great Buddha of Todai-ji in Nara, a huge bronze seated Buddha statue on a lotus pedestal with a golden halo behind it, seen from the front, full statue.",
     "torii": "The Great Torii gate of Itsukushima Shrine (Miyajima), large vermilion red wooden torii with its supporting side pillars, seen from the front, complete gate including the bottom of the pillars.",
     "whale": "A blue whale swimming, full body from head to tail flukes." + SIDE,
     "shinkansen": "The lead car of a JR Central N700A Shinkansen bullet train (Tokaido Shinkansen), white with a blue stripe, long aerodouble-wing nose, one single car only including bogies and wheels, no rails, no track." + SIDE,
+    "shinkansen_mid": "One single intermediate passenger car of a JR Central N700A Shinkansen bullet train (Tokaido Shinkansen), white with a blue stripe below the windows, a long straight box-shaped car with flat vertical ends on both left and right (no nose), a row of small passenger windows, including bogies and wheels, no pantograph, no rails, no track." + SIDE,
     "himeji": "Himeji Castle in Japan, the white main keep tower on its stone wall base, seen from the front, complete building.",
     "toji": "The five-story pagoda of Toji temple in Kyoto, dark wooden pagoda with its tall spire, seen from the front, complete building.",
     "jumbo": "A Boeing 787-9 Dreamliner airliner parked with landing gear down, plain white livery with no airline logo or text, raked wingtips, chevron engine nacelles." + SIDE,
@@ -60,6 +63,7 @@ images = {
     "pyramid": "The Great Pyramid of Giza (Pyramid of Khufu) in Egypt, sandy limestone stepped surface with no smooth casing stones left anywhere (not the Khafre pyramid), flat-ish top, seen from the front, complete pyramid from base to the top, no sphinx, no other pyramids.",
     "everest": "Mount Everest, the rocky Himalayan peak with snow and ice, sharp summit pyramid, clear sky with no clouds or snow plume, complete mountain from the wide base to the summit, wide shape.",
     "burj": "Burj Khalifa skyscraper in Dubai, very tall slender silver glass tower with stepped setbacks and a long spire, seen from the front, complete building from base to spire tip, very tall and thin.",
+    "umeda": "The Umeda Sky Building in Osaka, two tall slender glass skyscraper towers standing side by side, connected at the very top by the Floating Garden Observatory with its big circular opening, seen from the front, complete building from base to top." + FLAT,
     "fuji": "Mount Fuji,the symmetrical volcano with a snow-capped peak and blue-purple slopes, complete mountain from the wide base to the summit, wide shape.",
 }
 

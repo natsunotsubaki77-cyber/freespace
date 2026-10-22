@@ -220,6 +220,9 @@ const ITEMS = [
     shapes:['M3 40L3 22Q3 17 9 17L20 16L25 4Q26 0 32 0L84 0Q92 0 94 6L97 18Q100 20 100 26L100 40Z',
             [HI, 'M30 4L57 4L57 16L25 16Z'], [HI, 'M61 4L84 4Q89 4 90 8L93 16L61 16Z'],
             ['#222', E(22,40,10)], ['#222', E(80,40,10)], ['#ccc', E(22,40,4)], ['#ccc', E(80,40,4)]] },
+  { name:'トヨタ ルーミー', kname:'トヨタ ルーミー', en:'TOYOTA ROOMY', size:3.7, dim:'w', real:[3.7,1.735], vb:[100,47], color:'#c8302a',
+    memo:'全長3,700mm × 全高1,735mm。うしろはスライドドア。', kmemo:'ながさ 3メートル70センチの くるま。',
+    shapes:[R(2,4,96,36), ['#222', E(20,40,7)], ['#222', E(80,40,7)]] },
   { name:'キリン', kname:'キリン', en:'GIRAFFE', size:5.00, dim:'h', vb:[70,100], color:'#e0a43a',
     memo:'地上で最も背の高い動物。', kmemo:'せが いちばん たかい どうぶつ。',
     shapes:[E(28,52,22,11), 'M38 50L55 9L64 13L51 53Z', E(62,9,7,5), 'M62 5L70 9L68 14L59 13Z',
@@ -245,8 +248,8 @@ const ITEMS = [
     memo:'地球史上最大の動物。全長約25m。', kmemo:'ちきゅうで いちばん おおきい どうぶつ。',
     shapes:['M0 8L6 4L10 8Q20 6 40 4Q70 0 90 4Q100 7 99 12Q96 18 80 19Q50 22 20 16L10 12L6 18L0 14L4 11Z',
             'M64 16L56 22L71 18Z', [HI, 'M70 15Q85 18 97 13Q96 17 80 19Q72 19 70 15Z'], ['#111', E(86,10,0.8)]] },
-  { name:'新幹線 N700A 先頭車', kname:'しんかんせん N700A', en:'SHINKANSEN N700A', size:27.35, dim:'w', real:[27.35,3.6], vb:[100,15], color:'#f3f5f8',
-    memo:'東海道・山陽新幹線。先頭車の全長27.35m。', kmemo:'いちばん まえの 1りょうの ながさだよ。',
+  { name:'新幹線 N700A 16両', kname:'しんかんせん N700A 16りょう', en:'SHINKANSEN N700A (16 CARS)', size:404.7, dim:'w', real:[404.7,3.6], vb:[100,15], color:'#f3f5f8', train:16, fitW:4,
+    memo:'東海道・山陽新幹線。16両つなぐと全長404.7m（先頭車27.35m×2＋中間車25m×14）。', kmemo:'16りょう つなげた ながさ。やく 400メートル も あるよ。',
     shapes:['M0 1L58 1Q80 1 92 6Q100 10 100 12.5L100 13L0 13Z', ['#1d4fa0', R(0,9,97,1.6)],
             ['#25324a', R(4,4,52,2.2)], ['#25324a', 'M66 3Q76 3 82 6L70 6Z'], ['#333', R(0,13,100,1.2)],
             ['#333', E(12,14,1.2)], ['#333', E(20,14,1.2)], ['#333', E(78,14,1.2)], ['#333', E(86,14,1.2)]] },
@@ -308,19 +311,41 @@ const ITEMS = [
   { name:'ブルジュ・ハリファ', kname:'ブルジュ・ハリファ', en:'BURJ KHALIFA', size:828, dim:'h', vb:[20,100], color:'#9fb3c8',
     memo:'ドバイにある世界一高いビル。高さ828m。', kmemo:'せかいで いちばん たかい ビル。スカイツリーより たかいよ。',
     shapes:[P([[0,100],[20,100],[18,70],[16,45],[13,25],[11,10],[10.3,0],[9.7,0],[9,10],[7,25],[4,45],[2,70]])] },
+  { name:'梅田スカイビル 空中庭園', kname:'うめだスカイビルの くうちゅうていえん', en:'UMEDA SKY BUILDING', size:173, dim:'h', vb:[100,100], color:'#8fa6bd',
+    memo:'大阪・梅田。2つのビルを てっぺんの「空中庭園展望台」がつなぐ。高さ173m。', kmemo:'おおさかに ある ビル。2つの ビルの うえが つながって いるよ。たかさ 173メートル。',
+    shapes:[R(10,8,30,92), R(60,8,30,92), R(10,0,80,22)] },
 ];
 
 const USER = { name:'あなた', kname:'きみ', en:'YOU', dim:'h', vb:[40,100], color:'#ff8a3d', shapes:personShapes(), isUser:true };
 
 // 写真っぽい画像（images/*.webp）。読みこめたら形の絵のかわりに使う
-const IMG_KEYS = ['hamster','cat','rabbit','shiba','penguin','adult','vending','bear','elephant','freed','giraffe',
-  'trex','nara_daibutsu','torii','whale','shinkansen','himeji','toji','jumbo','ushiku','harukas','tokyotower','skytree','fuji','mirai','skybus','ferris','h3','pyramid','everest','burj'];
+const IMG_KEYS = ['hamster','cat','rabbit','shiba','penguin','adult','vending','bear','elephant','freed','roomy','giraffe',
+  'trex','nara_daibutsu','torii','whale','shinkansen','himeji','toji','jumbo','ushiku','harukas','tokyotower','skytree','fuji','mirai','skybus','ferris','h3','pyramid','everest','burj','umeda'];
 ITEMS.forEach((it, i) => it.img = IMG_KEYS[i]);
 USER.img = 'kid';
 const kidLook = {};
+
+// 先頭車（右むき）と中間車の絵をつないで 1本の列車にする。うしろの先頭車は左右反転
+function trainImage(head, mid, cars) {
+  const ph = 120, pxPerM = ph / 3.6 * 0.6;
+  const hw = Math.round(27.35 * pxPerM), mw = Math.round(25 * pxPerM);
+  const c = document.createElement('canvas');
+  c.width = hw * 2 + mw * (cars - 2); c.height = ph;
+  const g = c.getContext('2d');
+  g.save(); g.translate(hw, 0); g.scale(-1, 1); g.drawImage(head, 0, 0, hw, ph); g.restore();
+  for (let k = 0; k < cars - 2; k++) g.drawImage(mid, hw + mw * k, 0, mw, ph);
+  g.drawImage(head, c.width - hw, 0, hw, ph);
+  return c;
+}
 const imagesReady = Promise.all([...ITEMS, USER].map(it => new Promise(done => {
   const im = new Image();
-  im.onload = () => { it.image = im; it.vb = [im.naturalWidth, im.naturalHeight]; done(); };
+  im.onload = () => {
+    if (!it.train) { it.image = im; it.vb = [im.naturalWidth, im.naturalHeight]; done(); return; }
+    const mid = new Image();
+    mid.onload = () => { it.image = trainImage(im, mid, it.train); it.vb = [it.image.width, it.image.height]; done(); };
+    mid.onerror = () => done();
+    mid.src = `images/${it.img}_mid.webp`;
+  };
   im.onerror = () => done();
   im.src = `images/${it.img}.webp`;
 }))).then(() => { kidLook.image = USER.image; kidLook.vb = USER.vb; });

@@ -19,6 +19,11 @@
     display: grid; place-items: center; padding: 10px; touch-action: pan-y; box-shadow: 0 4px 0 #ead6ae; }
   .card img { width: 100%; height: 100%; object-fit: contain; }
   .card:active { transform: scale(.95); }
+  /* 横向きは高さが足りないので、半分の大きさで2列にならべる */
+  @media (orientation: landscape) {
+    #tray { display: grid; grid-template-columns: 1fr 1fr; align-content: start; gap: 10px; padding: 12px 10px; }
+    .card { border-radius: 16px; padding: 6px; border-width: 2px; box-shadow: 0 3px 0 #ead6ae; }
+  }
 
   /* 公園に置いた遊具。left/top は足もとの位置 */
   .item { position: absolute; transform: translate(-50%, -100%); touch-action: none; }
@@ -69,9 +74,9 @@ const ITEMS = [
   { id: 'slide', h: 0.42 },
   { id: 'swing', h: 0.36 },
   { id: 'seesaw', h: 0.17 },
-  { id: 'jungle_gym', h: 0.36 },
-  { id: 'sandbox', h: 0.15 },
-  { id: 'spring_rider', h: 0.22 },
+  { id: 'jungle_gym', h: 0.46 },
+  { id: 'sandbox', h: 0.22 },
+  { id: 'spring_rider', h: 0.15 },
   { id: 'bars', h: 0.22 },
 ];
 // 赤い絵の色をかえる（灰色の柱やくさりは そのまま）

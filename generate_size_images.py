@@ -64,7 +64,7 @@ images = {
     "everest": "Mount Everest, the rocky Himalayan peak with snow and ice, sharp summit pyramid, clear sky with no clouds or snow plume, complete mountain from the wide base to the summit, wide shape.",
     "burj": "Burj Khalifa skyscraper in Dubai, very tall slender silver glass tower with stepped setbacks and a long spire, seen from the front, complete building from base to spire tip, very tall and thin.",
     "umeda": "The Umeda Sky Building in Osaka, two tall slender glass skyscraper towers standing side by side, connected at the very top by the Floating Garden Observatory with its big circular opening, seen from the front, complete building from base to top." + FLAT,
-    "fuji": "Mount Fuji,the symmetrical volcano with a snow-capped peak and blue-purple slopes, complete mountain from the wide base to the summit, wide shape.",
+    "fuji": "Mount Fuji,the symmetrical volcano with a snow-capped peak and blue-purple slopes, complete mountain from the summit down to the very ends of its long gentle foothills, both left and right slopes curve smoothly all the way down to flat ground level and taper to nothing, nothing cut off at the sides, very wide shape with magenta space beyond both ends.",
 }
 
 

@@ -45,6 +45,9 @@ images = {
                 "a few scattered small trees and clover patches, a winding path over a hill, blue sky with fluffy clouds." + PARK,
     "bg_sea": "A park by the sea: a calm sparkling blue ocean and sandy beach visible along the back, a few palm-like and pine trees at the sides, "
               "a low white fence at the far edge of the lawn, a small sailboat far away, blue sky with fluffy clouds and a couple of seagulls far away." + PARK,
+    # ホーム画面のアイコン。正方形いっぱいに描く
+    "icon": "A square app icon for a toddler park-building game: a cozy little park on a round green lawn, a red slide, a small round tree, colorful tulips and a fluffy cloud in a light blue sky, "
+            "the whole scene filling the square edge to edge, bold simple shapes that stay clear when very small, square 1:1 image.",
     "slide": "A cute playground slide: a short ladder on the left, a small platform with a little roof, and a smooth wide slide going down to the right. Nothing hangs from the roof: no chains, no ropes, no swings." + ITEM,
     "swing": "A cute playground swing set: a sturdy frame with two swings hanging on chains, with flat seats." + ITEM,
     "seesaw": "A cute playground seesaw: one long board balanced on a center pivot, with a small handle and a round seat at each end, tilted slightly." + ITEM,

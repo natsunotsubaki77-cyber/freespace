@@ -33,7 +33,7 @@ PARK = (
 # 遊具：あとで切り抜くので背景はマゼンタ。色を変えやすいよう、おもな部分は1色にする
 ITEM = (
     " A single object only, seen from slightly above at a gentle three-quarter angle, matching a park background drawn the same way. "
-    "The main painted parts are all one bright red color so the color can be changed later; metal poles and chains are light gray. "
+    "The main painted parts are all one bright red color so the color can be changed later; metal parts are light gray. "
     "Background: one completely flat solid pure magenta color (#FF00FF) filling everything behind the object. "
     "No ground, no grass, no shadow, no scenery, no people."
 )
@@ -48,10 +48,12 @@ images = {
     "slide": "A cute playground slide: a short ladder on the left, a small platform with a little roof, and a smooth wide slide going down to the right. Nothing hangs from the roof: no chains, no ropes, no swings." + ITEM,
     "swing": "A cute playground swing set: a sturdy frame with two swings hanging on chains, with flat seats." + ITEM,
     "seesaw": "A cute playground seesaw: one long board balanced on a center pivot, with a small handle and a round seat at each end, tilted slightly." + ITEM,
-    "jungle_gym": "A cute playground jungle gym (climbing frame): a cube-shaped grid of bars, three bars tall and three wide, with round red joints and some red bars, simple and tidy." + ITEM,
+    "jungle_gym": "A cute playground jungle gym (climbing frame): a cube-shaped grid of bars, three bars tall and three wide, with round red joints and some red bars, simple and tidy. Nothing hangs from the bars: no chains, no ropes, no swings." + ITEM,
     "sandbox": "A cute playground sandbox: a low square wooden-edged frame painted red, filled with smooth light beige sand, with a small bucket and a shovel on the sand." + ITEM,
     "spring_rider": "A cute playground spring rider shaped like a round friendly horse with handles and a seat, standing on a big coiled metal spring." + ITEM,
-    "bars": "A cute playground horizontal bar set (tetsubou): three horizontal metal bars at low, middle and high heights in a row, held by red posts." + ITEM,
+    "flowerbed": "A cute small park flower bed: a low rounded oval border of light gray stones, filled with dark brown soil, green leaves and many round red tulip-like flowers." + ITEM,
+    "water_tap": "A cute park drinking fountain and water tap: a short round red pillar with a small light gray metal faucet on top and a little round basin, a tiny drop of water falling from the faucet." + ITEM,
+    "bench": "A cute park bench: a seat and backrest made of red wooden slats, with simple light gray metal legs and armrests, facing slightly to the right." + ITEM,
 }
 
 

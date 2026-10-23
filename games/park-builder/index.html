@@ -21,13 +21,16 @@
   .card:active { transform: scale(.95); }
   /* 横向きは高さが足りないので、半分の大きさで2列にならべる */
   @media (orientation: landscape) {
-    #tray { display: grid; grid-template-columns: 1fr 1fr; align-content: start; gap: 10px; padding: 12px 10px; }
+    #tray { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-content: start; overflow-x: hidden; gap: 10px; padding: 12px 10px; }
     .card { border-radius: 16px; padding: 6px; border-width: 2px; box-shadow: 0 3px 0 #ead6ae; }
   }
 
   /* 公園に置いた遊具。left/top は足もとの位置 */
   .item { position: absolute; transform: translate(-50%, -100%); touch-action: none; }
   .item img { width: 100%; display: block; filter: drop-shadow(0 6px 4px rgba(40, 70, 20, .25)); transform: scaleX(var(--flip, 1)); transition: transform .25s; }
+  /* 色・柄をぬった所。もとの絵の上にかさねる */
+  .item canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; transform: scaleX(var(--flip, 1)); transition: transform .25s; }
+  .item.lift canvas { transform: scaleX(var(--flip, 1)) scale(1.06); }
   .item.pop { animation: pop .35s cubic-bezier(.3, 1.6, .5, 1); }
   .item.lift img { filter: drop-shadow(0 18px 10px rgba(40, 70, 20, .3)); transform: scaleX(var(--flip, 1)) scale(1.06); }
   .item.bye { animation: bye .3s ease-in forwards; }
@@ -37,13 +40,13 @@
   #ghost { position: fixed; z-index: 100; pointer-events: none; transform: translate(-50%, -85%) scale(1.05); opacity: .9; }
   #ghost img { width: 100%; filter: drop-shadow(0 16px 10px rgba(0, 0, 0, .25)); }
 
-  /* 色えらび */
-  #palette { position: absolute; display: none; gap: 10px; padding: 10px 12px; border-radius: 40px;
+  /* 柄えらび */
+  #palette { position: absolute; display: none; grid-template-columns: repeat(6, 46px); gap: 10px; padding: 12px 14px; border-radius: 30px;
     background: rgba(255, 255, 255, .95); box-shadow: 0 6px 16px rgba(0, 0, 0, .18); z-index: 60; transform: translate(-50%, 0); }
-  #palette.show { display: flex; }
+  #palette.show { display: grid; }
   #palette button { width: 46px; height: 46px; border-radius: 50%; border: 4px solid #fff; box-shadow: 0 0 0 2px #ddd; cursor: pointer; }
   #palette button.on { box-shadow: 0 0 0 4px #ffb84d; }
-  #palette button.flip { background: #fff7e6; display: grid; place-items: center; padding: 0; margin-left: 6px; }
+  #palette button.flip { background: #fff7e6; display: grid; place-items: center; padding: 0; }
   #palette button.flip svg { width: 30px; }
 
   /* ごみばこ：遊具を持っているときだけ出る */
@@ -77,15 +80,9 @@ const ITEMS = [
   { id: 'jungle_gym', h: 0.46 },
   { id: 'sandbox', h: 0.22 },
   { id: 'spring_rider', h: 0.15 },
-  { id: 'bars', h: 0.22 },
-];
-// 赤い絵の色をかえる（灰色の柱やくさりは そのまま）
-const COLORS = [
-  { c: '#e5483d', f: '' },
-  { c: '#f5c531', f: 'hue-rotate(58deg) saturate(1.4) brightness(1.2)' },
-  { c: '#5fbf5a', f: 'hue-rotate(105deg) brightness(1.05)' },
-  { c: '#3d8fe0', f: 'hue-rotate(205deg) brightness(1.05)' },
-  { c: '#f07fb8', f: 'hue-rotate(320deg) saturate(.75) brightness(1.25)' },
+  { id: 'flowerbed', h: 0.14 },
+  { id: 'water_tap', h: 0.2 },
+  { id: 'bench', h: 0.15 },
 ];
 const HORIZON = 0.50; // これより上（空や森）には置けない
 const FRONT = 0.97;   // いちばん手前
@@ -176,7 +173,7 @@ function place(item, x, y) {
   const el = document.createElement('div');
   el.className = 'item pop';
   el.innerHTML = `<img src="images/${item.id}.webp" alt="">`;
-  el.data = { item, x, y, color: 0 };
+  el.data = { item, x, y, pattern: 0 };
   stage.appendChild(el);
   layout(el);
   el.addEventListener('animationend', () => el.classList.remove('pop'), { once: true });
@@ -227,19 +224,103 @@ function overTrash(ev) {
   return Math.hypot(ev.clientX - (r.left + r.width / 2), ev.clientY - (r.top + r.height / 2)) < r.width * 0.9;
 }
 
-// ===== 色えらび =====
-let paletteFor = null;
-COLORS.forEach((col, i) => {
+// ===== 柄えらび =====
+// 赤くぬった所だけに色や柄をのせる（灰色の柱やくさりは そのまま）。上の段は無地、下の段は柄。0 は もとの赤
+let seed = 1;
+const rnd = () => (seed = seed * 16807 % 2147483647) / 2147483647;
+function starPath(c, x, y, r) {
+  c.beginPath();
+  for (let i = 0; i < 10; i++) {
+    const a = -Math.PI / 2 + i * Math.PI / 5, rr = i % 2 ? r * 0.45 : r;
+    c.lineTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr);
+  }
+  c.fill();
+}
+function heartPath(c, x, y, r) {
+  c.beginPath();
+  c.moveTo(x, y + r * 0.9);
+  c.bezierCurveTo(x - r * 1.3, y, x - r * 0.8, y - r, x, y - r * 0.35);
+  c.bezierCurveTo(x + r * 0.8, y - r, x + r * 1.3, y, x, y + r * 0.9);
+  c.fill();
+}
+function blob(c, x, y, r) {
+  c.beginPath();
+  for (let i = 0; i < 5; i++) {
+    const a = rnd() * 6.3, d = r * 0.5 * rnd();
+    c.moveTo(x + Math.cos(a) * d, y + Math.sin(a) * d);
+    c.arc(x + Math.cos(a) * d, y + Math.sin(a) * d, r * (0.5 + 0.4 * rnd()), 0, 7);
+  }
+  c.fill();
+}
+// s は柄ひとつ分の大きさ
+const grid = (w, h, s, fn) => {
+  for (let y = 0, row = 0; y < h + s; y += s, row++)
+    for (let x = (row % 2) * s / 2; x < w + s; x += s) fn(x, y);
+};
+const PATTERNS = [
+  { bg: '#e5483d' },
+  { bg: '#f5c531' },
+  { bg: '#5fbf5a' },
+  { bg: '#3d8fe0' },
+  { bg: '#f07fb8' },
+  { bg: '#3b6fd1', draw: (c, w, h, s) => { c.fillStyle = '#ffd84a'; grid(w, h, s, (x, y) => starPath(c, x, y, s * 0.3)); } },
+  { bg: '#f27aa8', draw: (c, w, h, s) => { c.fillStyle = '#fff'; grid(w, h, s * 0.8, (x, y) => { c.beginPath(); c.arc(x, y, s * 0.17, 0, 7); c.fill(); }); } },
+  { bg: '#fff0f4', draw: (c, w, h, s) => { c.fillStyle = '#ff5f8f'; grid(w, h, s, (x, y) => heartPath(c, x, y, s * 0.28)); } },
+  { bg: '#fbfaf5', draw: (c, w, h, s) => { c.fillStyle = '#2b2b2b'; grid(w, h, s * 1.6, (x, y) => blob(c, x + s * (rnd() - .5), y + s * (rnd() - .5), s * 0.45)); } },
+  { bg: '#7d8f4e', draw: (c, w, h, s) => {
+    ['#a58a5a', '#4f6b34', '#2f3b25'].forEach(col => { c.fillStyle = col; grid(w, h, s * 1.1, (x, y) => blob(c, x + s * (rnd() - .5), y + s * (rnd() - .5), s * 0.35)); });
+  } },
+];
+function paintPattern(k, w, h, s) {
+  const cv = document.createElement('canvas');
+  cv.width = w; cv.height = h;
+  const c = cv.getContext('2d'), p = PATTERNS[k];
+  c.fillStyle = p.bg; c.fillRect(0, 0, w, h);
+  seed = 7; // 毎回おなじ模様になるように
+  p.draw?.(c, w, h, s);
+  return cv;
+}
+// 赤い所だけのかげの絵（_paint.webp）に柄をかけて、もとの絵の上にかさねる
+const paints = {};
+function paintImg(id) {
+  return paints[id] = paints[id] || new Promise((ok, ng) => {
+    const img = new Image();
+    img.onload = () => ok(img);
+    img.onerror = ng;
+    img.src = `images/${id}_paint.webp`;
+  });
+}
+async function applyPattern(el, k) {
+  el.querySelector('canvas')?.remove();
+  if (!k) return;
+  const pm = await paintImg(el.data.item.id);
+  if (el.data.pattern !== k) return; // 待つあいだに別の柄が押された
+  const w = pm.naturalWidth, h = pm.naturalHeight, cv = document.createElement('canvas');
+  cv.width = w; cv.height = h;
+  const c = cv.getContext('2d');
+  c.drawImage(paintPattern(k, w, h, Math.max(w, h) / 7), 0, 0);
+  c.globalCompositeOperation = 'multiply';    // 絵の明るい・暗いをうつす
+  c.drawImage(pm, 0, 0);
+  c.globalCompositeOperation = 'destination-in'; // 赤い所だけのこす
+  c.drawImage(pm, 0, 0);
+  el.querySelector('canvas')?.remove();
+  el.appendChild(cv);
+}
+PATTERNS.forEach((pt, i) => {
   const b = document.createElement('button');
-  b.style.background = col.c;
-  b.addEventListener('pointerdown', e => {
+  b.dataset.k = i;
+  if (pt.draw) {
+    b.style.background = `url(${paintPattern(i, 60, 60, 26).toDataURL()}) center / cover`;
+  } else b.style.background = pt.bg;
+  b.addEventListener('pointerdown', async e => {
     e.stopPropagation();
     if (!paletteFor) return;
-    paletteFor.data.color = i;
-    paletteFor.firstChild.style.filter = col.f ? col.f + ' drop-shadow(0 6px 4px rgba(40,70,20,.25))' : '';
-    [...palette.children].forEach((x, k) => x.classList.toggle('on', k === i && x !== flipBtn));
-    paletteFor.classList.remove('pop'); void paletteFor.offsetWidth; paletteFor.classList.add('pop');
+    const el = paletteFor;
+    el.data.pattern = i;
+    markPalette(i);
     pon(700 + i * 60);
+    try { await applyPattern(el, i); } catch (err) { return; }
+    el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop');
   });
   palette.appendChild(b);
 });
@@ -255,13 +336,14 @@ flipBtn.addEventListener('pointerdown', e => {
   paletteFor.style.setProperty('--flip', paletteFor.data.flip ? -1 : 1);
   pon(600);
 });
-palette.appendChild(flipBtn);
+palette.insertBefore(flipBtn, palette.children[5]); // 無地の段の右はし
+const markPalette = k => [...palette.children].forEach(x => x.classList.toggle('on', x.dataset.k == k));
 function showPalette(el) {
   paletteFor = el;
   const r = el.getBoundingClientRect();
   palette.style.left = Math.max(trayRight() + 150, Math.min(innerWidth - 150, r.left + r.width / 2)) + 'px';
-  palette.style.top = Math.min(innerHeight - 80, r.bottom + 10) + 'px';
-  [...palette.children].forEach((x, k) => x.classList.toggle('on', k === el.data.color && x !== flipBtn));
+  palette.style.top = Math.min(innerHeight - 140, r.bottom + 10) + 'px';
+  markPalette(el.data.pattern);
   palette.classList.add('show');
 }
 function hidePalette() { palette.classList.remove('show'); paletteFor = null; }

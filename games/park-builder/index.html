@@ -6,12 +6,13 @@
 <title>こうえんを つくろう</title>
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-180.png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@800&display=swap">
 <meta name="theme-color" content="#cfe8b0">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <style>
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; -webkit-user-select: none; }
-  html, body { margin: 0; height: 100%; overflow: hidden; background: #cfe8b0; font-family: "Hiragino Maru Gothic ProN", "BIZ UDPGothic", sans-serif; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #cfe8b0; font-family: "Hiragino Maru Gothic ProN", "M PLUS Rounded 1c", "BIZ UDPGothic", sans-serif; }
   img { -webkit-user-drag: none; pointer-events: none; }
 
   #stage { position: fixed; inset: 0; background: center / cover no-repeat; touch-action: none; }
@@ -19,7 +20,7 @@
   /* 左の遊具だな：たてにスクロール */
   #tray { position: fixed; left: 0; top: 0; bottom: 0; width: clamp(120px, 20vw, 200px); padding: 14px 12px;
     background: rgba(255, 249, 235, .88); border-right: 4px solid #e2c99a; border-radius: 0 28px 28px 0;
-    overflow-y: auto; overscroll-behavior: contain; display: flex; flex-direction: column; gap: 14px; z-index: 50; }
+    overflow-y: auto; overscroll-behavior: contain; display: flex; flex-direction: column; gap: 14px; z-index: 50; transition: transform .5s; }
   .card { flex: none; aspect-ratio: 1; min-height: 0; position: relative; border-radius: 22px; background: #fff; border: 3px solid #f0dfbd;
     display: grid; place-items: center; padding: 10px; touch-action: pan-y; box-shadow: 0 4px 0 #ead6ae; }
   .card img { position: absolute; inset: 0; width: 100%; height: 100%; padding: inherit; object-fit: contain; }
@@ -61,10 +62,112 @@
   #trash.show { transform: scale(1); }
   #trash.hot { transform: scale(1.25); background: #ffe1dc; }
   #trash svg { width: 58px; }
+
+  /* 看板（表紙・名前づけ・かんせいで つかう）。文字は板の上にのせる */
+  .sign { position: relative; aspect-ratio: 300 / 240; container-type: inline-size; }
+  .sign svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .sign .board { position: absolute; left: 7.3%; top: 9.2%; width: 85.3%; height: 41.7%; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; line-height: 1.15; color: #fff3d6; font-weight: 800; white-space: nowrap; text-shadow: 0 2px 0 #5e3a1a; }
+  .sign.park { aspect-ratio: 300 / 200; }
+  .sign.park .board { left: 7.3%; top: 10%; width: 85.3%; height: 40%; color: #1f5e2e; text-shadow: none; font-weight: 900; }
+
+  /* 表紙 */
+  #title { position: fixed; inset: 0; z-index: 150; background: url(images/bg_forest.webp) center / cover; overflow: hidden; transition: opacity .5s; }
+  #title.hide { opacity: 0; pointer-events: none; }
+  #title .sign { position: absolute; left: 50%; top: 3vh; width: min(46vw, 72vh); transform: translateX(-50%); }
+  #title img { position: absolute; filter: drop-shadow(0 6px 4px rgba(40, 70, 20, .25)); }
+  #title .slide { left: 3%; bottom: 4%; height: min(44vh, 26vw); }
+  #title .spring { right: calc(50% + min(12vh, 8vw) + 2vw); bottom: 3%; height: min(20vh, 13vw); }
+  #title .flower { left: calc(50% + min(12vh, 8vw) + 2vw); bottom: 2%; height: min(14vh, 8vw); }
+  #title .swing { right: 3%; bottom: 6%; height: min(40vh, 26vw); }
+  #start { position: absolute; left: 50%; bottom: 5vh; width: min(24vh, 16vw); aspect-ratio: 1; margin-left: calc(min(24vh, 16vw) / -2);
+    border: 0; border-radius: 50%; background: #ff9f43; box-shadow: 0 8px 0 #d9762a, 0 12px 20px rgba(0, 0, 0, .2); cursor: pointer;
+    display: grid; place-items: center; animation: hop 1.4s ease-in-out infinite; }
+  #start svg { width: 52%; margin-left: 8%; }
+  #start:active { transform: translateY(6px); box-shadow: 0 2px 0 #d9762a; animation: none; }
+  @keyframes hop { 50% { transform: translateY(-8px); } }
+
+  /* 右上のボタン：もどす・さいしょから・かんせい */
+  #tools { position: fixed; top: 12px; right: 14px; z-index: 70; display: flex; gap: 12px; align-items: flex-start; transition: transform .4s; }
+  .tool { border: 0; padding: 0; background: none; cursor: pointer; display: grid; justify-items: center; gap: 2px;
+    font-family: inherit; font-weight: 800; font-size: 13px; color: #4f6b34; text-shadow: 0 0 4px #fff, 0 0 4px #fff; }
+  .tool i { width: 60px; height: 60px; border-radius: 50%; background: #fff; box-shadow: 0 4px 0 #d8d0bf, 0 6px 10px rgba(0, 0, 0, .15); display: grid; place-items: center; }
+  .tool svg { width: 36px; }
+  .tool:active i { transform: translateY(3px); box-shadow: 0 1px 0 #d8d0bf; }
+  .tool:disabled { opacity: .4; }
+  #done { height: 60px; padding: 0 22px 0 14px; border-radius: 30px; background: #ff9f43; color: #fff; text-shadow: none;
+    font-size: 24px; display: flex; align-items: center; gap: 6px; box-shadow: 0 5px 0 #d9762a, 0 8px 12px rgba(0, 0, 0, .15); }
+  #done svg { width: 38px; }
+  #done:active { transform: translateY(4px); box-shadow: 0 1px 0 #d9762a; }
+  #edit { position: fixed; top: 12px; right: 14px; z-index: 70; transform: translateY(-150%); transition: transform .4s; }
+
+  /* かんせい：たなとボタンをかくして、看板を立てる */
+  #parkSign { position: absolute; left: 2vw; bottom: 1vh; width: min(30vw, 50vh); z-index: 5000; display: none; cursor: pointer; transform-origin: 50% 100%; }
+  body.done #parkSign { display: block; animation: rise .6s cubic-bezier(.3, 1.6, .5, 1); }
+  body.done #tray { transform: translateX(-110%); }
+  body.done #tools { transform: translateY(-150%); }
+  body.done #edit { transform: none; }
+  body.done .item { pointer-events: none; }
+  @keyframes rise { from { transform: scale(.2); } to { transform: scale(1); } }
+
+  /* 名前づけ */
+  #namer { position: fixed; inset: 0; z-index: 120; background: rgba(60, 90, 40, .55); display: none; flex-direction: column; align-items: center; padding-top: 3vh; gap: 2vh; }
+  #namer.show { display: flex; }
+  #namer .sign { width: min(56vw, 75vh); }
+  #namer input { width: 96%; border: 0; border-bottom: 3px dashed #9cc4a5; caret-color: #1f5e2e; background: transparent; text-align: center; color: inherit;
+    font-family: inherit; font-weight: 800; outline: none; padding: 0; user-select: text; -webkit-user-select: text; }
+  #namer input::placeholder { color: #a9c9b0; }
+  #namer .row { display: flex; gap: 18px; }
+  #namer button { border: 0; border-radius: 32px; height: 64px; padding: 0 28px; font-family: inherit; font-weight: 800; font-size: 24px; cursor: pointer; }
+  #ok { background: #5fbf5a; color: #fff; box-shadow: 0 5px 0 #3f8f3c; display: flex; align-items: center; gap: 6px; }
+  #ok svg { width: 32px; }
+  #cancel { background: #fff; color: #888; box-shadow: 0 5px 0 #ccc; }
+
+  /* 遊ぶ子ども：かんせいのときだけ遊具の上に出る。場所は遊具の絵に対する割合（cqw は遊具のはば） */
+  .kids { position: absolute; inset: 0; container-type: inline-size; pointer-events: none; transform: scaleX(var(--flip, 1)); display: none; }
+  body.done .kids { display: block; animation: come .6s; }
+  .kid { position: absolute; width: 0; height: 0; }
+  .item .kid img { position: absolute; left: 0; top: 0; max-width: none; transform: translate(var(--ax), var(--ay)); filter: none; transition: none; }
+  @keyframes come { from { opacity: 0; } }
+  /* すべり台：上でまって、手をあげてすべりおりる */
+  .kid.slide { animation: slideDown 3.6s linear infinite; }
+  .kid.slide img:nth-child(1) { animation: frameA 3.6s step-end infinite; }
+  .kid.slide img:nth-child(2) { animation: frameB 3.6s step-end infinite; }
+  @keyframes slideDown {
+    0% { left: 47%; top: 47%; opacity: 0; } 6% { opacity: 1; } 40% { left: 47%; top: 47%; animation-timing-function: ease-in; }
+    58% { left: 71%; top: 70%; } 70% { left: 82%; top: 87%; } 78% { left: 91%; top: 93%; }
+    92% { left: 91%; top: 93%; opacity: 1; } 100% { left: 91%; top: 93%; opacity: 0; } }
+  @keyframes frameA { 0% { opacity: 1; } 40% { opacity: 0; } }
+  @keyframes frameB { 0% { opacity: 0; } 40% { opacity: 1; } }
+  /* ブランコ：足をぶらぶら ⇔ 足を前にけり出す。上の棒を中心に少しゆれる */
+  .kid.swing { left: 39%; top: 70%; transform-origin: 0 -54cqw; animation: swingKid 2.4s ease-in-out infinite; }
+  .kid.swing img:nth-child(1) { animation: frameA2 2.4s step-end infinite; }
+  .kid.swing img:nth-child(2) { animation: frameB2 2.4s step-end infinite; }
+  @keyframes swingKid { 0%, 100% { transform: rotate(-3deg); } 50% { transform: rotate(3deg); } }
+  @keyframes frameA2 { 0% { opacity: 1; } 25% { opacity: 0; } 75% { opacity: 1; } }
+  @keyframes frameB2 { 0% { opacity: 0; } 25% { opacity: 1; } 75% { opacity: 0; } }
+
+  /* お祝いの紙ふぶき */
+  .confetti { position: fixed; top: -20px; width: 12px; height: 18px; z-index: 110; pointer-events: none; animation: fall linear forwards; }
+  @keyframes fall { to { transform: translate(var(--dx), 110vh) rotate(var(--r)); } }
+
+  /* たて向きのときは「よこにしてね」の画面でおおう */
+  #turn { position: fixed; inset: 0; z-index: 200; background: #cfe8b0; display: none; place-items: center; align-content: center; gap: 24px; }
+  #turn svg { width: 46vw; max-width: 260px; }
+  #turn .phone { transform-origin: 60px 60px; animation: turn 2.4s ease-in-out infinite; }
+  #turn p { margin: 0; font-size: clamp(26px, 7vw, 40px); font-weight: bold; color: #4f8a6a; letter-spacing: .1em; }
+  @keyframes turn { 0%, 25% { transform: rotate(0); } 55%, 100% { transform: rotate(-90deg); } }
+  @media (orientation: portrait) { #turn { display: grid; } }
 </style>
 </head>
 <body>
-<div id="stage"></div>
+<div id="stage"><div id="parkSign" class="sign park"><svg viewBox="0 0 300 200">
+      <path d="M36 200q4-14 9-2q4-12 8 0q5-10 8 2zM230 200q4-14 9-2q4-12 8 0q5-10 8 2z" fill="#6fae4c"/>
+      <g fill="#6d7a72" stroke="#4a544e" stroke-width="2"><rect x="46" y="96" width="12" height="104" rx="3"/><rect x="242" y="96" width="12" height="104" rx="3"/></g>
+      <path d="M49 100v96M245 100v96" stroke="#9aa69f" stroke-width="2"/>
+      <rect x="10" y="10" width="280" height="100" rx="4" fill="#fff" stroke="#b9c0bb" stroke-width="3"/>
+      <rect x="18" y="18" width="264" height="84" rx="2" fill="none" stroke="#1f5e2e" stroke-width="2.5"/>
+    </svg><div class="board"></div></div></div>
 <div id="tray"></div>
 <div id="palette"></div>
 <div id="trash">
@@ -74,6 +177,73 @@
     <rect x="5" y="10" width="50" height="9" rx="4.5" fill="#a8d9bd" stroke="#4f8a6a" stroke-width="3"/>
     <path d="M23 10q0-6 7-6t7 6" fill="none" stroke="#4f8a6a" stroke-width="3"/>
   </svg>
+</div>
+
+<div id="tools">
+  <button class="tool" id="undo" disabled><i><svg viewBox="0 0 40 40"><path d="M14 10L6 17l8 7" fill="none" stroke="#5da8f0" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M7 17h16a9 9 0 0 1 0 18h-8" fill="none" stroke="#5da8f0" stroke-width="5" stroke-linecap="round"/></svg></i>もどす</button>
+  <button class="tool" id="reset"><i><svg viewBox="0 0 40 40"><path d="M32 20a12 12 0 1 1-4-9" fill="none" stroke="#f08a5d" stroke-width="5" stroke-linecap="round"/>
+    <path d="M30 4v9h-9" fill="none" stroke="#f08a5d" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/></svg></i>さいしょから</button>
+  <button class="tool" id="done"><svg viewBox="0 0 40 40"><path d="M10 4v34" stroke="#fff" stroke-width="4" stroke-linecap="round"/>
+    <path d="M12 6h20l-5 7 5 7H12z" fill="#ffe14d" stroke="#fff" stroke-width="2.5" stroke-linejoin="round"/></svg>かんせい！</button>
+</div>
+<button class="tool" id="edit"><i><svg viewBox="0 0 40 40"><path d="M8 32l2-8L26 8l6 6-16 16z" fill="#ffd84a" stroke="#c9935a" stroke-width="3" stroke-linejoin="round"/>
+  <path d="M8 32l2-8 6 6z" fill="#f8deb2" stroke="#c9935a" stroke-width="3" stroke-linejoin="round"/></svg></i>なおす</button>
+
+<div id="namer">
+  <div class="sign park"><svg viewBox="0 0 300 200">
+      <path d="M36 200q4-14 9-2q4-12 8 0q5-10 8 2zM230 200q4-14 9-2q4-12 8 0q5-10 8 2z" fill="#6fae4c"/>
+      <g fill="#6d7a72" stroke="#4a544e" stroke-width="2"><rect x="46" y="96" width="12" height="104" rx="3"/><rect x="242" y="96" width="12" height="104" rx="3"/></g>
+      <path d="M49 100v96M245 100v96" stroke="#9aa69f" stroke-width="2"/>
+      <rect x="10" y="10" width="280" height="100" rx="4" fill="#fff" stroke="#b9c0bb" stroke-width="3"/>
+      <rect x="18" y="18" width="264" height="84" rx="2" fill="none" stroke="#1f5e2e" stroke-width="2.5"/>
+    </svg><div class="board"><input id="nameInput" maxlength="10" placeholder="なまえ" enterkeyhint="done"><span>こうえん</span></div></div>
+  <div class="row">
+    <button id="cancel">やめる</button>
+    <button id="ok"><svg viewBox="0 0 40 40"><path d="M8 21l8 8L33 11" fill="none" stroke="#fff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/></svg>できた</button>
+  </div>
+</div>
+
+<div id="title">
+  <div class="sign"><svg viewBox="0 0 300 240">
+      <path d="M40 240q4-16 10-2q4-14 9 0q5-12 8 2zM196 240q4-16 10-2q4-14 9 0q5-12 8 2z" fill="#6fae4c"/>
+      <g stroke="#5e3a1a" stroke-width="4"><rect x="62" y="100" width="22" height="134" rx="4" fill="#9a6232"/><rect x="216" y="100" width="22" height="134" rx="4" fill="#9a6232"/></g>
+      <path d="M70 140v40m6 10v36M224 150v44m6-30v50" stroke="#7a4b22" stroke-width="2" stroke-linecap="round" opacity=".6"/>
+      <g stroke="#5e3a1a" stroke-width="5" stroke-linejoin="round">
+        <path d="M12 16q0-6 6-6h264q6 0 6 6v54H12z" fill="#b5763d"/>
+        <path d="M10 72h280v56q0 6-6 6H16q-6 0-6-6z" fill="#a96c36"/>
+      </g>
+      <g fill="none" stroke="#8a5428" stroke-width="2" stroke-linecap="round" opacity=".55">
+        <path d="M22 28q60-6 120 0t130-2M30 54q50 5 100-1t140 3M24 88q70-6 140 0t110-1M34 116q60 5 120 0t120 2"/>
+        <ellipse cx="236" cy="41" rx="12" ry="5"/><ellipse cx="236" cy="41" rx="5" ry="2"/>
+        <ellipse cx="62" cy="102" rx="10" ry="4"/>
+      </g>
+      <path d="M18 15h264" stroke="#d9a066" stroke-width="3" stroke-linecap="round" opacity=".7"/>
+      <g fill="#4a2c12"><circle cx="26" cy="40" r="4.5"/><circle cx="274" cy="40" r="4.5"/><circle cx="26" cy="104" r="4.5"/><circle cx="274" cy="104" r="4.5"/></g>
+      <g fill="#c99a6a"><circle cx="25" cy="39" r="1.5"/><circle cx="273" cy="39" r="1.5"/><circle cx="25" cy="103" r="1.5"/><circle cx="273" cy="103" r="1.5"/></g>
+      <g fill="#ff8fb1"><circle cx="48" cy="226" r="6"/><circle cx="252" cy="224" r="6"/></g>
+      <g fill="#ffd84a"><circle cx="48" cy="226" r="2.5"/><circle cx="252" cy="224" r="2.5"/></g>
+    </svg><div class="board"><span style="font-size:14cqw">こうえんを</span><span style="font-size:14cqw">つくろう</span></div></div>
+  <img class="slide" src="images/slide.webp" alt="">
+  <img class="spring" src="images/spring_rider.webp" alt="">
+  <img class="flower" src="images/flowerbed.webp" alt="">
+  <img class="swing" src="images/swing.webp" alt="">
+  <button id="start" aria-label="はじめる"><svg viewBox="0 0 40 40"><path d="M10 5l26 15-26 15z" fill="#fff" stroke="#fff" stroke-width="4" stroke-linejoin="round"/></svg></button>
+</div>
+
+<div id="turn">
+  <svg viewBox="0 0 120 120">
+    <path d="M100 30a48 48 0 0 1 4 52" fill="none" stroke="#ffb84d" stroke-width="6" stroke-linecap="round"/>
+    <path d="M94 76l10 8 4-13" fill="none" stroke="#ffb84d" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+    <g class="phone">
+      <rect x="38" y="18" width="44" height="84" rx="10" fill="#fff" stroke="#4f8a6a" stroke-width="5"/>
+      <rect x="45" y="28" width="30" height="58" rx="4" fill="#a8d9bd"/>
+      <circle cx="53" cy="44" r="3" fill="#4f8a6a"/><circle cx="67" cy="44" r="3" fill="#4f8a6a"/>
+      <path d="M52 54q8 7 16 0" fill="none" stroke="#4f8a6a" stroke-width="3" stroke-linecap="round"/>
+      <circle cx="60" cy="94" r="3" fill="#4f8a6a"/>
+    </g>
+  </svg>
+  <p>よこに してね</p>
 </div>
 
 <script>
@@ -89,6 +259,11 @@ const ITEMS = [
   { id: 'water_tap', h: 0.2 },
   { id: 'bench', h: 0.15 },
 ];
+// 遊ぶ子どもの絵。w は絵のはば、k は遊具の絵とくらべた大きさ、a は足もと（こし）の位置
+const KIDS = {
+  slide: { nat: 800, k: 0.34, frames: [{ id: 'kid_slide_1', w: 627, a: [37, 100] }, { id: 'kid_slide_2', w: 667, a: [36, 100] }] },
+  swing: { nat: 589, k: 0.36, frames: [{ id: 'kid_swing_1', w: 320, a: [50, 72] }, { id: 'kid_swing_2', w: 439, a: [38, 70] }] },
+};
 const HORIZON = 0.50; // これより上（空や森）には置けない
 const FRONT = 0.97;   // いちばん手前
 
@@ -118,7 +293,7 @@ function pon(freq = 520) {
 function sizeAt(item, y) {
   const H = innerHeight;
   const depth = Math.max(0, Math.min(1, (y / H - HORIZON) / (FRONT - HORIZON)));
-  return item.h * H * (0.45 + 0.55 * depth); // 高さ(px)
+  return item.h * H * 1.2 * (0.45 + 0.55 * depth); // 高さ(px)。1.2 は全体を一回り大きくする分
 }
 function widthFor(item, img, y) {
   const r = img.naturalWidth / img.naturalHeight || 1;
@@ -175,15 +350,31 @@ function startFromTray(e, item, card) {
 
 // ===== 公園に置く =====
 function place(item, x, y) {
+  save();
+  const el = makeItem(item, x, y);
+  el.classList.add('pop');
+  el.addEventListener('animationend', () => el.classList.remove('pop'), { once: true });
+  pon();
+}
+function makeItem(item, x, y, pattern = 0, flip = false) {
   const el = document.createElement('div');
-  el.className = 'item pop';
+  el.className = 'item';
   el.innerHTML = `<img src="images/${item.id}.webp" alt="">`;
-  el.data = { item, x, y, pattern: 0 };
+  el.data = { item, x, y, pattern, flip };
+  if (flip) el.style.setProperty('--flip', -1);
   stage.appendChild(el);
   layout(el);
-  el.addEventListener('animationend', () => el.classList.remove('pop'), { once: true });
+  if (pattern) applyPattern(el, pattern).catch(() => {});
+  const kid = KIDS[item.id];
+  if (kid) {
+    const kids = document.createElement('div');
+    kids.className = 'kids';
+    kids.innerHTML = `<div class="kid ${item.id}">` + kid.frames.map(f =>
+      `<img src="images/${f.id}.webp" alt="" style="width:${f.w * kid.k / kid.nat * 100}cqw;--ax:-${f.a[0]}%;--ay:-${f.a[1]}%">`).join('') + '</div>';
+    el.appendChild(kids);
+  }
   el.addEventListener('pointerdown', e => grab(e, el));
-  pon();
+  return el;
 }
 function layout(el) {
   const d = el.data, img = el.firstChild;
@@ -205,7 +396,7 @@ function grab(e, el) {
   el.setPointerCapture(e.pointerId);
   const move = ev => {
     if (!moved && Math.hypot(ev.clientX - sx, ev.clientY - sy) < 8) return;
-    if (!moved) { moved = true; el.classList.add('lift'); trash.classList.add('show'); hidePalette(); }
+    if (!moved) { moved = true; save(); el.classList.add('lift'); trash.classList.add('show'); hidePalette(); }
     d.x = clampX(ev.clientX + ox);
     d.y = clampY(ev.clientY + oy);
     layout(el);
@@ -309,7 +500,7 @@ async function applyPattern(el, k) {
   c.globalCompositeOperation = 'destination-in'; // 赤い所だけのこす
   c.drawImage(pm, 0, 0);
   el.querySelector('canvas')?.remove();
-  el.appendChild(cv);
+  el.insertBefore(cv, el.querySelector('.kids'));
 }
 PATTERNS.forEach((pt, i) => {
   const b = document.createElement('button');
@@ -321,6 +512,8 @@ PATTERNS.forEach((pt, i) => {
     e.stopPropagation();
     if (!paletteFor) return;
     const el = paletteFor;
+    if (el.data.pattern === i) return;
+    save();
     el.data.pattern = i;
     markPalette(i);
     pon(700 + i * 60);
@@ -337,6 +530,7 @@ flipBtn.innerHTML = '<svg viewBox="0 0 40 40"><path d="M20 6v28" stroke="#c9a46a
 flipBtn.addEventListener('pointerdown', e => {
   e.stopPropagation();
   if (!paletteFor) return;
+  save();
   paletteFor.data.flip = !paletteFor.data.flip;
   paletteFor.style.setProperty('--flip', paletteFor.data.flip ? -1 : 1);
   pon(600);
@@ -354,7 +548,129 @@ function showPalette(el) {
 function hidePalette() { palette.classList.remove('show'); paletteFor = null; }
 stage.addEventListener('pointerdown', e => { if (e.target === stage) hidePalette(); });
 
-addEventListener('resize', () => document.querySelectorAll('.item').forEach(layout));
+// 画面の大きさがかわったら、置いた場所も同じ割合でうごかす（地面から浮かないように）
+let lastW = innerWidth, lastH = innerHeight;
+addEventListener('resize', () => {
+  const kx = innerWidth / lastW, ky = innerHeight / lastH;
+  lastW = innerWidth; lastH = innerHeight;
+  document.querySelectorAll('.item').forEach(el => { el.data.x *= kx; el.data.y *= ky; layout(el); });
+  hidePalette();
+});
+// ===== もどす・さいしょから =====
+// 何かかえる前に、公園のようすを とっておく（場所は画面に対する割合で）
+const undoStack = [];
+const undoBtn = document.getElementById('undo');
+const placed = () => [...stage.querySelectorAll('.item:not(.bye)')];
+function save() {
+  undoStack.push(placed().map(({ data: d }) => ({ item: d.item, fx: d.x / innerWidth, fy: d.y / innerHeight, pattern: d.pattern, flip: d.flip })));
+  if (undoStack.length > 50) undoStack.shift();
+  undoBtn.disabled = false;
+}
+undoBtn.addEventListener('click', () => {
+  if (!undoStack.length) return;
+  hidePalette();
+  stage.querySelectorAll('.item').forEach(el => el.remove());
+  undoStack.pop().forEach(o => makeItem(o.item, o.fx * innerWidth, o.fy * innerHeight, o.pattern, o.flip));
+  undoBtn.disabled = !undoStack.length;
+  pon(440);
+});
+document.getElementById('reset').addEventListener('click', () => {
+  const all = placed();
+  if (!all.length) return;
+  save(); // 「もどす」で元にもどせる
+  hidePalette();
+  all.forEach(el => { el.classList.add('bye'); el.addEventListener('animationend', () => el.remove(), { once: true }); });
+  pon(260);
+});
+
+// ===== かんせい！と看板 =====
+let parkName = '';
+const namer = document.getElementById('namer');
+const nameInput = document.getElementById('nameInput');
+const parkSign = document.getElementById('parkSign');
+// 字の数が多いほど小さく（cqw は看板のはばに対する割合）
+const fitSize = (text, max) => Math.min(max, 76 / Math.max(1, [...text].length)) + 'cqw';
+function signLines() {
+  const n = parkName || 'みんなの';
+  if (/(こうえん|公園)$/.test(n)) return [n];
+  return [...n].length <= 6 ? [n + 'こうえん'] : [n, 'こうえん'];
+}
+function fitInput() {
+  nameInput.style.fontSize = fitSize(nameInput.value || 'なまえ', 12);
+  nameInput.nextElementSibling.style.fontSize = '10cqw';
+}
+function openNamer() {
+  hidePalette();
+  nameInput.value = parkName;
+  fitInput();
+  namer.classList.add('show');
+  nameInput.focus();
+}
+nameInput.addEventListener('input', fitInput);
+nameInput.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.isComposing) finish(); });
+document.getElementById('done').addEventListener('click', openNamer);
+document.getElementById('cancel').addEventListener('click', () => { nameInput.blur(); namer.classList.remove('show'); });
+document.getElementById('ok').addEventListener('click', finish);
+parkSign.addEventListener('click', openNamer);
+document.getElementById('edit').addEventListener('click', () => { document.body.classList.remove('done'); pon(600); });
+
+function finish() {
+  parkName = nameInput.value.trim();
+  nameInput.blur();
+  namer.classList.remove('show');
+  const lines = signLines();
+  parkSign.querySelector('.board').replaceChildren(...lines.map((t, i) => {
+    const sp = document.createElement('span');
+    sp.textContent = t;
+    sp.style.fontSize = fitSize(t, lines.length > 1 ? (i ? 10 : 12) : 14);
+    return sp;
+  }));
+  document.body.classList.remove('done');
+  void parkSign.offsetWidth; // 看板が毎回ぴょんと出るように
+  document.body.classList.add('done');
+  confetti();
+  fanfare();
+}
+function confetti() {
+  const colors = ['#ff6b6b', '#ffd84a', '#5fbf5a', '#3d8fe0', '#f07fb8', '#ff9f43'];
+  for (let i = 0; i < 70; i++) {
+    const c = document.createElement('div');
+    c.className = 'confetti';
+    c.style.left = Math.random() * 100 + 'vw';
+    c.style.background = colors[i % colors.length];
+    c.style.borderRadius = i % 3 ? '3px' : '50%';
+    c.style.setProperty('--dx', (Math.random() - .5) * 200 + 'px');
+    c.style.setProperty('--r', (Math.random() - .5) * 1440 + 'deg');
+    c.style.animationDuration = 2.2 + Math.random() * 2 + 's';
+    c.style.animationDelay = Math.random() * .8 + 's';
+    document.body.appendChild(c);
+    c.addEventListener('animationend', () => c.remove());
+  }
+}
+// ド・ミ・ソ・ド〜
+function fanfare() {
+  try {
+    ac = ac || new (window.AudioContext || window.webkitAudioContext)();
+    [[523, 0], [659, .15], [784, .3], [1047, .45], [784, .7], [1047, .85]].forEach(([f, d], i, a) => {
+      const o = ac.createOscillator(), g = ac.createGain(), t = ac.currentTime + d;
+      o.type = 'triangle';
+      o.frequency.value = f;
+      g.gain.setValueAtTime(0.3, t);
+      g.gain.exponentialRampToValueAtTime(0.001, t + (i === a.length - 1 ? .8 : .3));
+      o.connect(g).connect(ac.destination);
+      o.start(t); o.stop(t + .9);
+    });
+  } catch (e) {}
+}
+
+// ===== 表紙 =====
+document.getElementById('start').addEventListener('click', () => {
+  document.getElementById('title').classList.add('hide');
+  pon(700);
+});
+
+// ホーム画面から開いたときなどは、横向きに固定できる
+addEventListener('pointerdown', () => screen.orientation?.lock?.('landscape').catch(() => {}), { once: true });
 </script>
 </body>
 </html>

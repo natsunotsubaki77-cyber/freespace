@@ -7,13 +7,14 @@ import sys
 import time
 from dotenv import load_dotenv
 from google import genai
+from PIL import Image
 
 load_dotenv()
 API_KEY = os.environ.get("GEMINI_API_KEY")
 if not API_KEY:
     raise RuntimeError("環境変数 GEMINI_API_KEY を .env ファイルに設定してください")
 
-OUTPUT_DIR = os.path.join(os.path.dirname(__file__), "games", "park-builder", "images")
+OUTPUT_DIR = os.path.join(os.path.dirname(__file__), "games", "park-builder", "raw")  # 切り抜き前。process_park_builder_images.py で images/ へ
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 client = genai.Client(api_key=API_KEY)
@@ -37,6 +38,13 @@ ITEM = (
     "Background: one completely flat solid pure magenta color (#FF00FF) filling everything behind the object. "
     "No ground, no grass, no shadow, no scenery, no people."
 )
+# 遊ぶ子ども：遊具の上にかさねるので、子どもだけを描く
+KID = (
+    " Only the one child, full body, no playground equipment, no seat, no ropes, no chains, no ground, no shadow, no other objects."
+    " Background: one completely flat solid pure magenta color (#FF00FF) filling everything behind the child. Do not use magenta or pink on the child."
+)
+SLIDE_KID = "A cute small child about four years old with short black hair in two little pigtails, a yellow T-shirt and blue shorts, white sneakers. "
+SWING_KID = "A cute small boy about four years old with short brown hair, a light green T-shirt and navy shorts, white sneakers. "
 
 images = {
     "bg_forest": "A park surrounded by a lush forest: rows of big round leafy trees of varied greens along the back and both sides, "
@@ -57,7 +65,19 @@ images = {
     "flowerbed": "A cute small park flower bed: a low rounded oval border of light gray stones, filled with dark brown soil, green leaves and many round red tulip-like flowers." + ITEM,
     "water_tap": "A cute park drinking fountain and water tap: a short round red pillar with a small light gray metal faucet on top and a little round basin, a tiny drop of water falling from the faucet." + ITEM,
     "bench": "A cute park bench: a seat and backrest made of red wooden slats, with simple light gray metal legs and armrests, facing slightly to the right." + ITEM,
+    # すべり台：上でまつ → 手をあげてすべる（2まい目は1まい目と同じ子）
+    "kid_slide_1": SLIDE_KID + "Sitting with both legs stretched straight out forward to the right, seen from the side at a gentle three-quarter angle facing right, "
+                   "both hands resting on the ground beside the hips, excited smile, ready to go." + KID,
+    "kid_slide_2": "The exact same child as in the reference picture, same face, hair and clothes, same size and angle. Still sitting with both legs stretched straight out forward to the right, "
+                   "now leaning back a little with both arms raised high in the air, laughing happily." + KID,
+    # ブランコ：足をぶらぶら → 足を前にけり出す
+    "kid_swing_1": SWING_KID + "Seen from the front at a gentle three-quarter angle, sitting as if on a small seat, both arms raised to shoulder height with hands loosely closed as if holding two ropes, "
+                   "knees bent and lower legs hanging straight down, big happy smile." + KID,
+    "kid_swing_2": "The exact same boy as in the reference picture, same face, hair and clothes, same size and angle, hands in the same place as if holding two ropes. "
+                   "Now leaning back a little and kicking both legs straight out forward toward the viewer, laughing." + KID,
 }
+# 2まい目は1まい目の絵を見せて、同じ子に描いてもらう
+REFS = {"kid_slide_2": "kid_slide_1", "kid_swing_2": "kid_swing_1"}
 
 
 def generate(name, prompt):
@@ -65,10 +85,13 @@ def generate(name, prompt):
     if os.path.exists(path):
         print(f"  [SKIP] {name}")
         return True
+    contents = [f"{STYLE}\n\nSubject: {prompt}"]
+    if name in REFS:
+        contents.insert(0, Image.open(os.path.join(OUTPUT_DIR, f"{REFS[name]}.png")))
     try:
         res = client.models.generate_content(
             model=MODEL,
-            contents=f"{STYLE}\n\nSubject: {prompt}",
+            contents=contents,
             config=genai.types.GenerateContentConfig(response_modalities=["IMAGE", "TEXT"]),
         )
         for part in res.candidates[0].content.parts:

@@ -33,5 +33,5 @@ if __name__ == "__main__":
     names = sys.argv[1:] or sorted(f[:-4] for f in os.listdir(p.RAW) if f.endswith(".png"))
     for n in names:
         p.process(n)
-        if not n.startswith("bg_"):
+        if not n.startswith(("bg_", "kid_")):  # 子どもは色をかえない
             paint_layer(n)
